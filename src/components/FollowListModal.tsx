@@ -16,6 +16,7 @@
    son profil, avec une confirmation, jamais d'un toucher dans une liste.
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, X, UserCheck, UserPlus } from "lucide-react";
@@ -124,17 +125,16 @@ export default function FollowListModal({
       onClick={onClose}
     >
       <motion.div
+        data-feuille
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        transition={transitionFeuille}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
-        </div>
+        <PoigneeFeuille onFermer={onClose} />
         <div className="flex items-center justify-between px-5 pb-3 pt-1">
           <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Amis</h2>
           <motion.button whileTap={{ scale: 0.88 }} onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer" style={{ background: "rgba(0,0,0,0.06)" }}>

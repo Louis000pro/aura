@@ -14,6 +14,7 @@
    lignes système.
    ───────────────────────────────────────────────────────────── */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { lireBrouillon, effacerBrouillon } from "@/lib/filPotes";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -1222,6 +1223,7 @@ function MenuMessage({ message, mode, moi, mienne, onFermer, onReaction, onRepon
         onClick={() => { if (Date.now() - ouvertLe > 400) onFermer(); }}
       />
       <motion.div
+        data-feuille
         role="dialog"
         aria-modal="true"
         className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[var(--r-feuille)] px-4 pt-4 md:left-1/2 md:right-auto md:bottom-6 md:-ml-[220px] md:w-[440px] md:rounded-[26px]"
@@ -1230,9 +1232,9 @@ function MenuMessage({ message, mode, moi, mienne, onFermer, onReaction, onRepon
           paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",
         }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        transition={transitionFeuille}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
+        <PoigneeFeuille onFermer={onFermer} />
 
         {mode === "reactions" && (
         <div className="mb-1 flex justify-between px-1">

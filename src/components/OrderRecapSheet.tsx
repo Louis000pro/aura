@@ -8,6 +8,7 @@
    src/lib/orderEstimate.ts. Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check, Flame, Pencil } from "lucide-react";
@@ -53,12 +54,14 @@ export default function OrderRecapSheet({
       onClick={onClose}
     >
       <motion.div
-        initial={{ y: 60, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 40, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 360, damping: 34 }}
+        data-feuille
+        initial={{ y: 60, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: "100%", opacity: 0 }}
+        transition={transitionFeuille}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgb(var(--surface-rgb))", maxHeight: "92dvh" }}
       >
+        <PoigneeFeuille onFermer={onClose} />
         {/* Bandeau d'ambiance */}
         <div className="relative" style={{ height: 112, background: BAND_GRADIENT }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { VisageGuide } from "@/components/AssistantMark";
@@ -117,6 +117,20 @@ export default function AccueilSignature({
   const [feuilleSerie, setFeuilleSerie] = useState(false);
   const { user } = useAuth();
   const { open: ouvrirAssistant, ouvrirSurQuestion } = useGestesAssistant();
+
+  useEffect(() => {
+    if (!missionsLues) return;
+    const chargerFeuilles = () => {
+      void import("@/components/accueil/FeuilleSerie").catch(() => {});
+      void import("@/components/accueil/FeuilleMissions").catch(() => {});
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(chargerFeuilles, { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(chargerFeuilles, 250);
+    return () => window.clearTimeout(id);
+  }, [missionsLues]);
 
   /* ── Le mot du jour (Louis, 2026-10-17) ──
      Un mot par jour, gardé sur l'appareil avec son état « lu ». Il attend

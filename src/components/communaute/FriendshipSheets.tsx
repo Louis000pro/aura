@@ -1,5 +1,6 @@
 "use client";
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { lockBodyModal } from "@/lib/bodyModal";
@@ -122,6 +123,7 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         onClick={onFermer}
       />
       <motion.div
+        data-feuille
         role="dialog"
         aria-modal="true"
         aria-label="Amis"
@@ -134,9 +136,9 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         initial={{ y: "100%", opacity: 0.7 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0.7 }}
-        transition={{ type: "spring", damping: 32, stiffness: 340 }}
+        transition={transitionFeuille}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
+        <PoigneeFeuille onFermer={onFermer} />
         {children}
       </motion.div>
     </>

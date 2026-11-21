@@ -7,8 +7,9 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { lockBodyModal } from "@/lib/bodyModal";
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 
 export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }: {
   onClose: () => void;
@@ -18,6 +19,7 @@ export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }:
   niveau?: number;
 }) {
   useEffect(() => lockBodyModal(), []);
+  const reduit = useReducedMotion();
   /* ⚠️ UN PORTAIL VERS `body`, OBLIGATOIRE : la feuille d'un jour s'ouvre
      DEPUIS « Ma semaine », qui s'anime en `transform`. Un enfant `fixed`
      se calerait sur elle et serait rogné par son `overflow-hidden`. La
@@ -26,23 +28,25 @@ export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }:
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: reduit ? 0 : 0.18 }}
       className="fixed inset-0 flex items-end md:items-center justify-center md:px-4"
-      style={{ zIndex: niveau, background: "rgba(12,8,22,0.5)", backdropFilter: "blur(3px)" }}
+      style={{ zIndex: niveau, background: "rgba(12,8,22,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
-        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        data-feuille
+        initial={{ y: 48 }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={reduit ? { duration: 0 } : transitionFeuille}
         className="vy-verre-epais relative w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           maxHeight: "90dvh",
           height: hauteur,
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-center pt-2.5 pb-1 md:hidden flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
-        </div>
+        <PoigneeFeuille onFermer={onClose} className="md:hidden" />
         {children}
       </motion.div>
     </motion.div>,

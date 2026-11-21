@@ -10,6 +10,7 @@
    petit rendez-vous avec Vaiiya. Voir [[nutrition-unification-refonte]].
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -114,9 +115,10 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               Avant, elle flottait avec des marges latérales mais touchait le
               bas de l'écran : on aurait dit une carte coupée. */}
           <motion.div
+            data-feuille
             role="dialog" aria-modal="true" aria-labelledby="pesee-titre"
-            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
-            transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
+            transition={transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             className="w-full md:max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-3 md:pt-6"
             style={{
@@ -125,7 +127,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               paddingBottom: "calc(20px + env(safe-area-inset-bottom))",
             }}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full md:hidden" style={{ background: "rgba(var(--text-3-rgb),0.3)" }} />
+            <PoigneeFeuille onFermer={later} className="md:hidden" />
 
             <div className="flex items-start justify-between gap-3">
               <div>

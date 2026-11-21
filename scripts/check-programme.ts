@@ -1210,10 +1210,13 @@ verdict(
         une demi-seconde, donc personne ne le signalerait jamais. ── */
   {
     const CLIENT = net(lire("src/app/AccueilClient.tsx"));
+    const MA_JOURNEE = net(lire("src/components/accueil/MaJournee.tsx"));
     verdict(
-      "V7B · « Ma journée » attend la vraie évaluation, pas le cache d'EXP",
-      ACCUEIL.includes("{missionsLues && (") && !ACCUEIL.includes("{auraLoaded && ("),
-      "le groupe est gardé par `missionsLues`",
+      "V7B · « Ma journée » réserve sa place avant d'afficher les missions lues en base",
+      MA_JOURNEE.includes("{missionsLues ? <div className={styles.bento}") &&
+        MA_JOURNEE.includes("{missionsLues && <>") &&
+        ACCUEIL.includes("missionsLues={missionsLues}"),
+      "le bento et les missions attendent `missionsLues`",
     );
     verdict(
       "V7B · et ce drapeau ne se lève que sur la réponse de la base",

@@ -22,8 +22,9 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { lockBodyModal } from "@/lib/bodyModal";
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 
 export default function Sheet({ children, onFermer, niveau = 90 }: {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export default function Sheet({ children, onFermer, niveau = 90 }: {
   // La barre du bas s'efface sous la feuille, sinon elle se pose sur
   // son bas et en mange les boutons (vu sur téléphone, 2026-10-22).
   useEffect(() => lockBodyModal(), []);
+  const reduit = useReducedMotion();
 
   // `document` n'existe pas au rendu serveur. Le garde suffit sans état
   // ni effet : la feuille ne se rend qu'après un clic, donc le serveur ne
@@ -48,20 +50,24 @@ export default function Sheet({ children, onFermer, niveau = 90 }: {
         className="fixed inset-0 bg-black/45"
         style={{ zIndex: niveau }}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: reduit ? 0 : 0.18 }}
         onClick={onFermer}
       />
       <motion.div
+        data-feuille
         role="dialog"
         aria-modal="true"
-        className="vy-verre-epais fixed inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[var(--r-feuille)] px-5 pt-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
+        className="vy-verre-epais fixed inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[var(--r-feuille)] px-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
         style={{
           zIndex: niveau + 1,
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
         }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        transition={reduit ? { duration: 0 } : transitionFeuille}
       >
-        <div className="mx-auto mb-4 h-1 w-10 flex-shrink-0 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
+        <PoigneeFeuille onFermer={onFermer} className="-mx-5 !w-auto" />
         {/* Une feuille plus haute que l'écran défile au lieu de perdre son
             haut (et sa sortie) au-dessus du bord. */}
         <div className="-mx-5 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">{children}</div>

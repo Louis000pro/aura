@@ -12,6 +12,7 @@
    Voir [[nutrition-unification-refonte]], [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Loader2, Check, RefreshCw, AlertTriangle, Shuffle } from "lucide-react";
@@ -67,12 +68,14 @@ export default function GeneratedRecipeSheet({
           onClick={onClose}
         >
           <motion.div
-            initial={{ y: 60, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 40, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            data-feuille
+            initial={{ y: 60, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: "100%", opacity: 0 }}
+            transition={transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
             style={{ background: "rgb(var(--surface-rgb))", maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
+            <PoigneeFeuille onFermer={onClose} />
             <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               <div>
                 <p className="vy-label" style={{ color: "var(--text-3)" }}>{eyebrow}</p>

@@ -9,6 +9,7 @@
    qui se connaissent déjà, des droits seraient du décor.
    ───────────────────────────────────────────────────────────── */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -569,12 +570,13 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
       <motion.div className="fixed inset-0 z-[90] bg-black/45"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onFermer} />
       <motion.div
+        data-feuille
         className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[var(--r-feuille)] px-5 pt-5"
         style={{ background: "rgb(var(--surface-rgb))", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        transition={transitionFeuille}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .35)" }} />
+        <PoigneeFeuille onFermer={onFermer} />
         <b className="mb-3 block text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Ajouter quelqu&apos;un</b>
 
         <div className="max-h-[42vh] overflow-y-auto">

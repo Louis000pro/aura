@@ -20,6 +20,7 @@
    marchent ici exactement comme sur Entraînement.
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
@@ -174,17 +175,16 @@ export default function HeroJournee({ onPret }: {
             onClick={(e) => { if (e.target === e.currentTarget) setQuand(false); }}
           >
             <motion.div
-              initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 34 }}
+              data-feuille
+              initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
+              transition={transitionFeuille}
               className="vy-verre-epais w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
               style={{
                 paddingBottom: "env(safe-area-inset-bottom)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-center pt-2.5 pb-1 md:hidden">
-                <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
-              </div>
+              <PoigneeFeuille onFermer={() => setQuand(false)} className="md:hidden" />
               <div className="flex items-center gap-3 px-5 pt-2 pb-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[16px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>

@@ -13,6 +13,7 @@
    ⚠️ Aucun filtre Vaiiya+ : une séance Vaiiya+ est marquée, jamais cachée.
    ════════════════════════════════════════════════════════════════════ */
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
@@ -45,13 +46,15 @@ export default function FeuilleFiltres({ groupe, filtres, seances, onAppliquer, 
       onClick={(e) => { if (e.target === e.currentTarget) onFermer(); }}
     >
       <motion.div
-        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        data-feuille
+        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
+        transition={transitionFeuille}
         role="dialog" aria-modal="true" aria-label={tout ? "Filtres" : def!.titre}
         className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ maxHeight: tout ? "92dvh" : "80dvh", background: "rgb(var(--surface-rgb))", boxShadow: "0 -12px 40px rgba(20,16,32,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
+        <PoigneeFeuille onFermer={onFermer} className="md:hidden" />
         <div className="flex justify-center pt-2 md:hidden flex-shrink-0">
           <div className="w-9 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.35 }} />
         </div>

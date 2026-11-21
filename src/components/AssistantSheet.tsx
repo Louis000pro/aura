@@ -14,6 +14,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Send, ChevronDown, Check, Utensils } from "lucide-react";
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import MicroMaintenir from "@/components/assistant/MicroMaintenir";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
@@ -362,6 +363,7 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
+  const reduce = useReducedMotion();
   const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, memoryNotice, pendingSeance, seanceAccrochee, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal, quotaChat, messagesEpuises } = useAssistant();
   const router = useRouter();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
@@ -487,21 +489,22 @@ export default function AssistantSheet() {
           <motion.div
             key="assistant-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: reduce ? 0 : 0.18 }}
             onClick={close}
             className="fixed inset-0 z-[110]"
-            style={{ background: "rgba(10,7,24,0.42)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(10,7,24,0.42)" }}
           />
 
           {/* Sheet */}
           <motion.div
             key="assistant-sheet"
+            data-feuille
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 320 }}
+            transition={reduce ? { duration: 0 } : transitionFeuille}
             className="fixed z-[111] left-0 right-0 bottom-0 mx-auto flex flex-col overflow-hidden
                        md:left-auto md:right-6 md:bottom-6 md:w-[420px] md:rounded-3xl"
             style={{
-              height: "min(88vh, 760px)",
+              height: "min(88dvh, 760px)",
               maxWidth: 640,
               /* Blanche et pleine, jamais en verre (Louis, 2026-10-11) : la
                  conversation se lit, rien ne doit transparaître dessous. */
@@ -511,6 +514,7 @@ export default function AssistantSheet() {
               boxShadow: "0 -12px 48px rgba(0,0,0,0.28)",
             }}
           >
+            <PoigneeFeuille onFermer={close} libelle="Fermer la conversation" className="md:hidden" />
             {/* ── L'EN-TÊTE : LE GUIDE, SON NOM, CE QU'IL FAIT ──
                 Version 3 : on doit voir d'un coup d'œil qu'on parle à
                 quelqu'un. Le Guide se tient en haut à gauche, assez grand
@@ -541,8 +545,9 @@ export default function AssistantSheet() {
                   </AnimatePresence>
                 </span>
               </div>
-              <div className="absolute min-w-0"
-                style={{ left: compact ? 80 : 142, right: 64, top: compact ? 20 : 56, transition: "left .28s cubic-bezier(.22,1,.36,1), top .28s cubic-bezier(.22,1,.36,1)" }}>
+              <div
+                style={{ left: compact ? 80 : 142, top: compact ? 20 : 56, transition: "left .28s cubic-bezier(.22,1,.36,1), top .28s cubic-bezier(.22,1,.36,1)" }}
+                className="absolute min-w-0 right-4 md:right-16">
                 {/* Un seul mot pour désigner Nora et Sasha : « Guide ».
                     L'en-tête disait « Ton assistant », les cartes disaient
                     « le coach » et le produit dit ✦ : trois noms pour un
@@ -559,7 +564,7 @@ export default function AssistantSheet() {
                 <p className="mt-1 text-[11px] font-medium truncate" style={{ color: "var(--text-body)" }}>{roleGuide(guide)}</p>
               </div>
               <button onClick={close} aria-label="Fermer la conversation"
-                className="absolute flex items-center justify-center cursor-pointer"
+                className="absolute hidden items-center justify-center cursor-pointer md:flex"
                 style={{ right: 12, top: 12, width: 44, height: 44, borderRadius: 999, background: "rgba(var(--surface-rgb),0.72)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
                 <ChevronDown size={20} strokeWidth={2} style={{ color: "var(--text-1)" }} />
               </button>

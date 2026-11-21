@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
 import VisuelCadeau from "@/components/rang/VisuelCadeau";
@@ -12,6 +12,8 @@ import { cleMontee } from "@/lib/motRang";
 import { RANGS, RECOMPENSES_RANG, TITRE_DIAMANT, jokersParMois, progressionRang, type GenreCadeau, type Rang } from "@/lib/aura";
 import { nJokers } from "@/lib/jokers";
 import { useJokersActifs } from "@/hooks/useJokersActifs";
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import { lockBodyModal } from "@/lib/bodyModal";
 
 /**
  * LA GALERIE DES RANGS, UN RANG PAR ÉCRAN (maquette B, choisie par Louis le
@@ -61,12 +63,17 @@ export default function RangsModal({
   isAdmin?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
+  const reduit = useReducedMotion();
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
+    const deverrouiller = lockBodyModal();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      deverrouiller();
+    };
   }, [open, onClose]);
 
   if (!mounted) return null;
@@ -79,54 +86,62 @@ export default function RangsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: reduit ? 0 : 0.18 }}
           onClick={onClose}
           style={{ background: "rgba(10,6,20,0.55)" }}
         >
           <motion.div
-            className="w-full sm:max-w-md max-h-[92dvh] overflow-y-auto rounded-t-[var(--r-feuille)] sm:rounded-[var(--r-feuille)] pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            data-feuille
+            role="dialog"
+            aria-modal="true"
+            aria-label="Les rangs"
+            className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-[var(--r-feuille)] sm:max-w-md sm:rounded-[var(--r-feuille)] sm:pt-4"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            transition={reduit ? { duration: 0 } : transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             style={{ background: "var(--page-bg)", boxShadow: "0 -8px 40px rgba(0,0,0,0.3)" }}
           >
-            <Carrousel
-              expActuel={expActuel}
-              rangActuelId={rangActuelId}
-              pseudo={pseudo}
-              avatarUrl={avatarUrl}
-              onClose={onClose}
-            />
+            <PoigneeFeuille onFermer={onClose} className="sm:hidden" />
+            <div className="min-h-0 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+20px)]">
+              <Carrousel
+                expActuel={expActuel}
+                rangActuelId={rangActuelId}
+                pseudo={pseudo}
+                avatarUrl={avatarUrl}
+                onClose={onClose}
+              />
 
-            {isAdmin && (
-              <div className="mx-5 mt-5 border-t pt-3" style={{ borderColor: "rgba(var(--accent-rgb),0.1)" }}>
-                <p className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
-                  Admin · rejouer la célébration
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {/* Seuls les rangs qui se gagnent : le Bronze, on l'a dès l'inscription. */}
-                  {RANGS.filter((r) => cleMontee(r.id)).map((rang) => (
-                    <button
-                      key={rang.id}
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        rejouerCelebration(rang.id);
-                      }}
-                      className="rounded-full px-2.5 py-1 text-[11px] font-bold active:opacity-80"
-                      style={{
-                        background: "rgba(var(--accent-rgb),0.08)",
-                        color: "var(--exp-encre)",
-                        border: "1px solid rgba(var(--accent-rgb),0.14)",
-                      }}
-                    >
-                      {rang.nom}
-                    </button>
-                  ))}
+              {isAdmin && (
+                <div className="mx-5 mt-5 border-t pt-3" style={{ borderColor: "rgba(var(--accent-rgb),0.1)" }}>
+                  <p className="text-[11px] font-bold" style={{ color: "var(--text-3)" }}>
+                    Admin · rejouer la célébration
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {/* Seuls les rangs qui se gagnent : le Bronze, on l'a dès l'inscription. */}
+                    {RANGS.filter((r) => cleMontee(r.id)).map((rang) => (
+                      <button
+                        key={rang.id}
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          rejouerCelebration(rang.id);
+                        }}
+                        className="rounded-full px-2.5 py-1 text-[11px] font-bold active:opacity-80"
+                        style={{
+                          background: "rgba(var(--accent-rgb),0.08)",
+                          color: "var(--exp-encre)",
+                          border: "1px solid rgba(var(--accent-rgb),0.14)",
+                        }}
+                      >
+                        {rang.nom}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </motion.div>
         </motion.div>
       )}
@@ -181,15 +196,15 @@ function Carrousel({
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="grid place-items-center h-11 w-11 rounded-full outline-none active:opacity-80"
+          className="hidden sm:grid place-items-center h-11 w-11 rounded-full active:opacity-80"
           style={{ background: "rgba(var(--accent-rgb),0.08)", color: "var(--text-soft)" }}
         >
           <X size={18} strokeWidth={2.5} />
         </button>
-        <span className="vy-nombre text-[13px]" style={{ color: "var(--text-3)" }}>
+        <span className="vy-nombre mx-auto text-[13px]" style={{ color: "var(--text-3)" }}>
           {index + 1} / {RANGS.length}
         </span>
-        <span className="w-11" />
+        <span className="hidden w-11 sm:block" />
       </div>
 
       <div className="relative">

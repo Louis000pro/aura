@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect, useRef } from "react";
 import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 import { createPortal } from "react-dom";
@@ -307,10 +308,11 @@ function EditProfileModal({
       onClick={onClose}
     >
       <motion.div
+        data-feuille
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        transition={transitionFeuille}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] p-6 pb-8 md:pb-6"
         style={{
           background: "rgba(var(--surface-rgb),0.98)",
@@ -323,10 +325,7 @@ function EditProfileModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle (mobile) */}
-        <div className="flex justify-center mb-4 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.22)" }} />
-        </div>
+        <PoigneeFeuille onFermer={onClose} className="md:hidden" />
 
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-[20px] font-semibold" style={{ color: "var(--text-1)" }}>Modifier le profil</h2>
