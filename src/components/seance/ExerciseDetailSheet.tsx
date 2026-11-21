@@ -1,6 +1,6 @@
 "use client";
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { motion } from "framer-motion";
 import { X, Check, Plus, Sparkles } from "lucide-react";
 import ExerciseThumb from "./ExerciseThumb";
@@ -68,10 +68,8 @@ export default function ExerciseDetailSheet({
       style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(5px)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 70, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="w-full md:max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           background: "rgb(var(--surface-rgb))",
@@ -175,7 +173,7 @@ export default function ExerciseDetailSheet({
             </motion.button>
           )}
         </div>
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

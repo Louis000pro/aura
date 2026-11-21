@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect, useRef } from "react";
 import { lireMemoire, ecrireMemoire } from "@/lib/memoireSession";
 import { createPortal } from "react-dom";
@@ -307,12 +307,8 @@ function EditProfileModal({
       style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] p-6 pb-8 md:pb-6"
         style={{
           background: "rgba(var(--surface-rgb),0.98)",
@@ -471,7 +467,7 @@ function EditProfileModal({
             "Sauvegarder"
           )}
         </motion.button>
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

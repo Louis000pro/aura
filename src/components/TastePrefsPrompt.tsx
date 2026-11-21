@@ -13,7 +13,7 @@
    Mécanique calquée sur WeighInPrompt (snooze « plus tard », non bloquant).
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus } from "lucide-react";
@@ -137,11 +137,9 @@ export default function TastePrefsPrompt() {
               largeur, collée au bord, opaque, et elle garde la place de la
               barre d'accueil de l'iPhone. Avant, elle flottait avec des marges
               latérales et se faisait couper par le bas de l'écran. */}
-          <motion.div
-            data-feuille
+          <PanneauFeuille
+            onFermer={later}
             role="dialog" aria-modal="true" aria-labelledby="gouts-titre"
-            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-            transition={transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             className="w-full md:max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-3 md:pt-6 flex flex-col overflow-hidden"
             style={{
@@ -261,7 +259,7 @@ export default function TastePrefsPrompt() {
                 Plus tard
               </button>
             </div>
-          </motion.div>
+          </PanneauFeuille>
         </motion.div>
       )}
     </AnimatePresence>

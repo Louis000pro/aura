@@ -14,7 +14,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Send, ChevronDown, Check, Utensils } from "lucide-react";
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import MicroMaintenir from "@/components/assistant/MicroMaintenir";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
@@ -496,11 +496,9 @@ export default function AssistantSheet() {
           />
 
           {/* Sheet */}
-          <motion.div
+          <PanneauFeuille
             key="assistant-sheet"
-            data-feuille
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={reduce ? { duration: 0 } : transitionFeuille}
+            onFermer={close}
             className="fixed z-[111] left-0 right-0 bottom-0 mx-auto flex flex-col overflow-hidden
                        md:left-auto md:right-6 md:bottom-6 md:w-[420px] md:rounded-3xl"
             style={{
@@ -875,7 +873,7 @@ export default function AssistantSheet() {
               </form>
               )}
             </div>
-          </motion.div>
+          </PanneauFeuille>
         </>
       )}
     </AnimatePresence>,

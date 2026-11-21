@@ -16,7 +16,7 @@
    son profil, avec une confirmation, jamais d'un toucher dans une liste.
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, X, UserCheck, UserPlus } from "lucide-react";
@@ -124,12 +124,8 @@ export default function FollowListModal({
       style={{ background: "rgba(0,0,0,0.18)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
@@ -205,7 +201,7 @@ export default function FollowListModal({
           )}
         </div>
         <div className="pb-safe h-6" />
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

@@ -9,7 +9,7 @@
    qui se connaissent déjà, des droits seraient du décor.
    ───────────────────────────────────────────────────────────── */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -569,12 +569,10 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
     <>
       <motion.div className="fixed inset-0 z-[90] bg-black/45"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onFermer} />
-      <motion.div
-        data-feuille
+      <PanneauFeuille
+        onFermer={onFermer}
         className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[var(--r-feuille)] px-5 pt-5"
         style={{ background: "rgb(var(--surface-rgb))", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={transitionFeuille}
       >
         <PoigneeFeuille onFermer={onFermer} />
         <b className="mb-3 block text-[20px] font-bold" style={{ color: "var(--text-0)" }}>Ajouter quelqu&apos;un</b>
@@ -630,7 +628,7 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
           {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
           Ajouter{choisis.length ? ` (${choisis.length})` : ""}
         </button>
-      </motion.div>
+      </PanneauFeuille>
     </>
   );
 }

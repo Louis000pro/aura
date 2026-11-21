@@ -20,7 +20,7 @@
    marchent ici exactement comme sur Entraînement.
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
@@ -174,10 +174,8 @@ export default function HeroJournee({ onPret }: {
             style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(3px)" }}
             onClick={(e) => { if (e.target === e.currentTarget) setQuand(false); }}
           >
-            <motion.div
-              data-feuille
-              initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-              transition={transitionFeuille}
+            <PanneauFeuille
+              onFermer={() => setQuand(false)}
               className="vy-verre-epais w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
               style={{
                 paddingBottom: "env(safe-area-inset-bottom)",
@@ -207,7 +205,7 @@ export default function HeroJournee({ onPret }: {
                   void j.daterEtape(date);
                 }} />
               </div>
-            </motion.div>
+            </PanneauFeuille>
           </motion.div>
         )}
       </AnimatePresence>

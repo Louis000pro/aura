@@ -24,7 +24,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { lockBodyModal } from "@/lib/bodyModal";
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 
 export default function Sheet({ children, onFermer, niveau = 90 }: {
   children: React.ReactNode;
@@ -53,8 +53,8 @@ export default function Sheet({ children, onFermer, niveau = 90 }: {
         transition={{ duration: reduit ? 0 : 0.18 }}
         onClick={onFermer}
       />
-      <motion.div
-        data-feuille
+      <PanneauFeuille
+        onFermer={onFermer}
         role="dialog"
         aria-modal="true"
         className="vy-verre-epais fixed inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[var(--r-feuille)] px-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
@@ -64,14 +64,12 @@ export default function Sheet({ children, onFermer, niveau = 90 }: {
           backdropFilter: "none",
           WebkitBackdropFilter: "none",
         }}
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={reduit ? { duration: 0 } : transitionFeuille}
       >
         <PoigneeFeuille onFermer={onFermer} className="-mx-5 !w-auto" />
         {/* Une feuille plus haute que l'écran défile au lieu de perdre son
             haut (et sa sortie) au-dessus du bord. */}
         <div className="-mx-5 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">{children}</div>
-      </motion.div>
+      </PanneauFeuille>
     </>,
     document.body,
   );

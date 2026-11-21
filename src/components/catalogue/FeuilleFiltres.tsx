@@ -13,7 +13,7 @@
    ⚠️ Aucun filtre Vaiiya+ : une séance Vaiiya+ est marquée, jamais cachée.
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
@@ -45,10 +45,8 @@ export default function FeuilleFiltres({ groupe, filtres, seances, onAppliquer, 
       style={{ background: "rgba(12,8,22,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onFermer(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onFermer}
         role="dialog" aria-modal="true" aria-label={tout ? "Filtres" : def!.titre}
         className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ maxHeight: tout ? "92dvh" : "80dvh", background: "rgb(var(--surface-rgb))", boxShadow: "0 -12px 40px rgba(20,16,32,0.22)" }}
@@ -147,7 +145,7 @@ export default function FeuilleFiltres({ groupe, filtres, seances, onAppliquer, 
             {n > 0 ? <>Voir <span className="vy-nombre" style={{ fontWeight: 700 }}>{n}</span> {pluriel(n).replace(/^\d+ /, "")}</> : "Voir les plus proches"}
           </motion.button>
         </div>
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

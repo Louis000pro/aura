@@ -12,7 +12,7 @@
    Voir [[nutrition-unification-refonte]], [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Loader2, Check, RefreshCw, AlertTriangle, Shuffle } from "lucide-react";
@@ -67,10 +67,8 @@ export default function GeneratedRecipeSheet({
           style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
           onClick={onClose}
         >
-          <motion.div
-            data-feuille
-            initial={{ y: 60, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: "100%", opacity: 0 }}
-            transition={transitionFeuille}
+          <PanneauFeuille
+            onFermer={onClose}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
             style={{ background: "rgb(var(--surface-rgb))", maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
@@ -191,7 +189,7 @@ export default function GeneratedRecipeSheet({
                 )}
               </div>
             )}
-          </motion.div>
+          </PanneauFeuille>
         </motion.div>
       )}
     </AnimatePresence>

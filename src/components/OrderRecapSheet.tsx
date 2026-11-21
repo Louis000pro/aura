@@ -8,7 +8,7 @@
    src/lib/orderEstimate.ts. Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check, Flame, Pencil } from "lucide-react";
@@ -53,10 +53,8 @@ export default function OrderRecapSheet({
       style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}
       onClick={onClose}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 60, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{ background: "rgb(var(--surface-rgb))", maxHeight: "92dvh" }}
@@ -143,7 +141,7 @@ export default function OrderRecapSheet({
             <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
           </button>
         </div>
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

@@ -12,7 +12,7 @@ import { cleMontee } from "@/lib/motRang";
 import { RANGS, RECOMPENSES_RANG, TITRE_DIAMANT, jokersParMois, progressionRang, type GenreCadeau, type Rang } from "@/lib/aura";
 import { nJokers } from "@/lib/jokers";
 import { useJokersActifs } from "@/hooks/useJokersActifs";
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { lockBodyModal } from "@/lib/bodyModal";
 
 /**
@@ -90,16 +90,12 @@ export default function RangsModal({
           onClick={onClose}
           style={{ background: "rgba(10,6,20,0.55)" }}
         >
-          <motion.div
-            data-feuille
+          <PanneauFeuille
+            onFermer={onClose}
             role="dialog"
             aria-modal="true"
             aria-label="Les rangs"
             className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-[var(--r-feuille)] sm:max-w-md sm:rounded-[var(--r-feuille)] sm:pt-4"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={reduit ? { duration: 0 } : transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             style={{ background: "var(--page-bg)", boxShadow: "0 -8px 40px rgba(0,0,0,0.3)" }}
           >
@@ -142,7 +138,7 @@ export default function RangsModal({
                 </div>
               )}
             </div>
-          </motion.div>
+          </PanneauFeuille>
         </motion.div>
       )}
     </AnimatePresence>,

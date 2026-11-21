@@ -35,7 +35,7 @@
    liste affichée rouvrirait le bouton sur un conflit qui existe encore.
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, X } from "lucide-react";
@@ -289,10 +289,8 @@ export default function AdaptationSheet({
       style={{ background: "rgba(12,8,22,0.5)", backdropFilter: "blur(3px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           background: "rgb(var(--surface-rgb))",
@@ -564,7 +562,7 @@ export default function AdaptationSheet({
             </>
           )}
         </div>
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

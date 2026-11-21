@@ -10,7 +10,7 @@
    petit rendez-vous avec Vaiiya. Voir [[nutrition-unification-refonte]].
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -114,11 +114,9 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
               bord, et elle garde la place de la barre d'accueil de l'iPhone.
               Avant, elle flottait avec des marges latérales mais touchait le
               bas de l'écran : on aurait dit une carte coupée. */}
-          <motion.div
-            data-feuille
+          <PanneauFeuille
+            onFermer={later}
             role="dialog" aria-modal="true" aria-labelledby="pesee-titre"
-            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-            transition={transitionFeuille}
             onClick={(e) => e.stopPropagation()}
             className="w-full md:max-w-sm rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] px-6 pt-3 md:pt-6"
             style={{
@@ -186,7 +184,7 @@ export default function WeighInPrompt({ ouvert, onFermer }: {
                 Plus tard
               </button>
             )}
-          </motion.div>
+          </PanneauFeuille>
         </motion.div>
       )}
     </AnimatePresence>

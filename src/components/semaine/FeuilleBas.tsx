@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { lockBodyModal } from "@/lib/bodyModal";
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 
 export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }: {
   onClose: () => void;
@@ -33,10 +33,8 @@ export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }:
       style={{ zIndex: niveau, background: "rgba(12,8,22,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 48 }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={reduit ? { duration: 0 } : transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="vy-verre-epais relative w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           maxHeight: "90dvh",
@@ -48,7 +46,7 @@ export default function FeuilleBas({ onClose, children, hauteur, niveau = 100 }:
       >
         <PoigneeFeuille onFermer={onClose} className="md:hidden" />
         {children}
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>,
     document.body,
   );

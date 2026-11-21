@@ -13,7 +13,7 @@
    Tout le reste vit derrière un tap. L'historique a quitté la page.
    ════════════════════════════════════════════════════════════════════ */
 
-import PoigneeFeuille, { transitionFeuille } from "@/components/PoigneeFeuille";
+import PoigneeFeuille, { PanneauFeuille } from "@/components/PoigneeFeuille";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
@@ -151,10 +151,8 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
       style={{ background: "rgba(12,8,22,0.5)", backdropFilter: "blur(3px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="vy-verre-epais w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden flex flex-col"
         style={{
           maxHeight,
@@ -164,7 +162,7 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
       >
         <PoigneeFeuille onFermer={onClose} className="md:hidden" />
         {children}
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }
@@ -838,10 +836,8 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
       style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(3px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        data-feuille
-        initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-        transition={transitionFeuille}
+      <PanneauFeuille
+        onFermer={onClose}
         className="w-full max-w-lg rounded-t-[var(--r-feuille)] md:rounded-[var(--r-feuille)] overflow-hidden"
         style={{
           background: "rgb(var(--surface-rgb))",
@@ -977,7 +973,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
         </motion.button>
         </>
         )}
-      </motion.div>
+      </PanneauFeuille>
     </motion.div>
   );
 }

@@ -92,6 +92,7 @@ export default function MicroMaintenir({ voix, desactive }: { voix: Voix; desact
       )}
 
       <button type="button"
+        data-feuille-sans-geste
         disabled={desactive || voix.state === "processing"}
         onPointerDown={(e) => {
           if (e.button !== 0 || voix.state !== "idle") return;

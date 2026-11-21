@@ -116,10 +116,11 @@ export default function AccueilSignature({
   const [feuille, setFeuille] = useState(false);
   const [feuilleSerie, setFeuilleSerie] = useState(false);
   const { user } = useAuth();
+  const connecte = !!user?.id;
   const { open: ouvrirAssistant, ouvrirSurQuestion } = useGestesAssistant();
 
   useEffect(() => {
-    if (!missionsLues) return;
+    if (!connecte) return;
     const chargerFeuilles = () => {
       void import("@/components/accueil/FeuilleSerie").catch(() => {});
       void import("@/components/accueil/FeuilleMissions").catch(() => {});
@@ -130,7 +131,7 @@ export default function AccueilSignature({
     }
     const id = window.setTimeout(chargerFeuilles, 250);
     return () => window.clearTimeout(id);
-  }, [missionsLues]);
+  }, [connecte]);
 
   /* ── Le mot du jour (Louis, 2026-10-17) ──
      Un mot par jour, gardé sur l'appareil avec son état « lu ». Il attend
