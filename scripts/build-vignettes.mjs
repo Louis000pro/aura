@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { lireFluent } from "./vignettes/fluent.mjs";
 
-const MODULES = ["serie-1", "herbes", "declinaisons", "serie-2", "serie-3", "serie-4", "serie-5", "ustensiles-1", "ustensiles-2", "ustensiles-3"];
+const MODULES = ["serie-1", "herbes", "declinaisons", "serie-2", "serie-3", "serie-4", "serie-5", "hiver-festif", "ustensiles-festif", "ustensiles-1", "ustensiles-2", "ustensiles-3"];
 const DESSINS = {};
 for (const m of MODULES) {
   const lot = (await import(`./vignettes/dessins/${m}.mjs`)).default;
@@ -38,7 +38,7 @@ const FLUENT_INGREDIENTS = {
   "cafe": "hot_beverage", "vin-rouge": "wine_glass", "olive": "olive", "piment": "hot_pepper", "poulet": "poultry_leg",
   "agneau": "meat_on_bone", "riz": "cooked_rice", "spaghetti": "spaghetti", "ramen": "steaming_bowl", "pain": "bread",
   "fraise": "strawberry", "raisin": "grapes", "glace": "ice_cream", "herbes": "herb", "fromage": "cheese_wedge",
-  "conserve-tomate": "canned_food",
+  "conserve-tomate": "canned_food", "ananas": "pineapple",
 };
 const FLUENT_USTENSILES = { "couteau": "kitchen_knife", "cuillere": "spoon", "bol": "bowl_with_spoon", "bocal": "jar", "tasse": "hot_beverage" };
 const DECLINAISONS_USTENSILES = new Set(["poele", "faitout", "assiette", "fourchette"]);

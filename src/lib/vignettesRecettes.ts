@@ -36,6 +36,7 @@ const INGREDIENTS: Regle[] = [
   [/puree-de-noisette/, "puree-noisette"],
   [/creme-de-marron/, "chataigne"],
   [/pate-de-curry/, "pate-curry"],
+  [/bouchees?-feuilletees?/, "pate-tarte"],
   [/pate-(feuilletee|sablee|brisee)|pate-a-tarte/, "pate-tarte"],
   [/sauce-chocolat/, "sauce-chocolat"],
   [/caramel/, "caramel"],
@@ -83,6 +84,7 @@ const INGREDIENTS: Regle[] = [
   [/(^|-)lait(-|$)/, "lait"],
 
   // Boissons
+  [/biere/, "biere"],
   [/eau-gazeuse/, "eau-gazeuse"],
   [/^eau(-|$)/, "eau"],
   [/cafe/, "cafe"],
@@ -177,6 +179,9 @@ const INGREDIENTS: Regle[] = [
   [/chataigne|(^|-)marrons?(-|$)/, "chataigne"],
 
   // Fruits
+  [/pruneau/, "pruneau"],
+  [/ananas/, "ananas"],
+  [/cranberr|canneberge/, "cranberries"],
   [/pamplemousse/, "pamplemousse"],
   [/clementine|mandarine|orange/, "orange"],
   [/citron/, "citron"],
@@ -206,6 +211,9 @@ const INGREDIENTS: Regle[] = [
   [/cornichon/, "cornichon"],
 
   // Légumes
+  [/topinambour/, "topinambour"],
+  [/cardon/, "cardon"],
+  [/chou.*bruxelles/, "choux-bruxelles"],
   [/patate-douce/, "patate-douce"],
   [/carotte/, "carotte"],
   [/panais/, "panais"],
@@ -257,6 +265,9 @@ const INGREDIENTS: Regle[] = [
 ];
 
 const USTENSILES: Regle[] = [
+  [/rouleau/, "rouleau"],
+  [/emporte-piece/, "emporte-piece"],
+  [/billes-de-cuisson/, "billes-cuisson"],
   [/couteau/, "couteau"],
   [/planche/, "planche"],
   [/grande-casserole|faitout/, "faitout"],

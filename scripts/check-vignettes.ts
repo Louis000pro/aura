@@ -28,7 +28,7 @@ function verdict(nom: string, bon: boolean, detail: string) {
   console.log("[" + (bon ? "OK   " : "ECHEC") + "] " + nom + " · " + detail);
 }
 
-const lire = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+const lire = (f: string) => readFileSync(new URL("../" + f, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const net = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemin, import.meta.url));
 
