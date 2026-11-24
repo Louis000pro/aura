@@ -19,6 +19,9 @@ export const BANDE: Record<GenreSituation | "absence", React.CSSProperties> = {
   gene: { backgroundImage: "repeating-linear-gradient(135deg, #6D4BD6 0 2px, transparent 2px 5px)" },
   energie: { backgroundImage: "repeating-linear-gradient(to bottom, #2BD4A0 0 3px, transparent 3px 6px)" },
   materiel: { background: "rgba(139,92,246,.45)" },
+  evenement: { background: "linear-gradient(to bottom, transparent 0 60%, #E8620C 60%)" },
+  autre_sport: { backgroundImage: "repeating-linear-gradient(to bottom, #E8620C 0 2px, transparent 2px 7px)" },
+  jours_moment: { backgroundImage: "repeating-linear-gradient(to bottom, #6D4BD6 0 6px, transparent 6px 9px)" },
   absence: { background: "var(--text-2)" },
 };
 
@@ -44,8 +47,8 @@ export default function BilletsMoment({ situations, absences, aujourdhui, nomEta
         ))}
         {situations.map((s) => (
           <Billet key={s.id} bande={BANDE[genreDe(s)]}
-            titre={s.reglages.genre === "gene" ? nomGene(s.reglages.zones) : TITRE[genreDe(s)]}
-            sous={`${periode(s, aujourdhui)} · ${effetCourt(s, nomEtape)}`}
+            titre={s.reglages.genre === "gene" ? nomGene(s.reglages.zones) : s.reglages.genre === "evenement" && s.motif ? s.motif : TITRE[genreDe(s)]}
+            sous={s.reglages.genre === "evenement" ? `le ${dateCourte(s.fin)} · pas de séance ce jour-là` : `${periode(s, aujourdhui)} · ${effetCourt(s, nomEtape)}`}
             onClick={() => onOuvrir(s)} />
         ))}
         <button type="button" onClick={onAjouter}

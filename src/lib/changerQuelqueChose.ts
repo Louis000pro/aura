@@ -9,9 +9,8 @@
    ⚠️ PUR : aucune lecture, aucune écriture, aucun DOM. L'écran ne fait
    que montrer ce que `filtrerGestes` rend et ouvrir la porte du geste.
 
-   ⚠️ UN GESTE LISTÉ EST UN GESTE QUI MARCHE. Un événement et un autre
-   sport (les dernières situations de la maquette) n'entrent ici qu'avec
-   leur écran : une ligne qui n'ouvre rien serait un chantier visible.
+   ⚠️ UN GESTE LISTÉ EST UN GESTE QUI MARCHE : une ligne qui n'ouvre
+   rien serait un chantier visible.
    ════════════════════════════════════════════════════════════════════ */
 
 export type PorteGeste =
@@ -27,6 +26,9 @@ export type PorteGeste =
   | "gene"
   | "energie"
   | "materiel"
+  | "evenement"
+  | "autre_sport"
+  | "jours_moment"
   | "adaptation"
   | "jours"
   | "programme";
@@ -62,10 +64,16 @@ export const GESTES: Geste[] = [
     mots: ["fatigue", "fatiguee", "energie", "malade", "rhume", "grippe", "sommeil", "dors", "creve", "crevee", "epuise", "epuisee"] },
   { id: "materiel", groupe: "periode", libelle: "Je n’ai pas mon matériel", porte: "materiel",
     mots: ["materiel", "salle", "fermee", "hotel", "halteres", "maison", "equipement"] },
+  { id: "evenement", groupe: "periode", libelle: "J’ai un match, une course, un événement", porte: "evenement",
+    mots: ["match", "course", "competition", "evenement", "rando", "randonnee", "tournoi", "marathon", "trail", "semi"] },
+  { id: "sport", groupe: "periode", libelle: "Je fais un autre sport à côté", porte: "autre_sport",
+    mots: ["sport", "foot", "football", "velo", "natation", "piscine", "running", "cours", "boxe", "basket", "tennis", "padel", "danse", "club", "entrainement"] },
+  { id: "jours_moment", groupe: "periode", libelle: "Mes jours changent pendant un moment", porte: "jours_moment",
+    mots: ["jours", "horaires", "emploi", "stage", "planning", "moment", "temporaire", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] },
   { id: "cote", groupe: "periode", libelle: "Mettre une séance de côté un moment", porte: "adaptation",
     mots: ["eviter", "pause", "cote"] },
-  { id: "jours", groupe: "periode", libelle: "Mes jours changent", porte: "jours",
-    mots: ["jours", "horaires", "emploi", "stage", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] },
+  { id: "jours", groupe: "programme", libelle: "Mes jours changent pour de bon", porte: "jours",
+    mots: ["jours", "horaires", "emploi", "toujours", "definitivement", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] },
   { id: "rythme", groupe: "programme", libelle: "Mes jours et ma durée", porte: "programme",
     mots: ["duree", "rythme", "fois", "semaine", "temps"] },
   { id: "objectif", groupe: "programme", libelle: "Mon objectif et mes séances", porte: "programme",

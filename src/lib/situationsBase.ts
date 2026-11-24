@@ -11,11 +11,18 @@
 
 import { createClient } from "@/lib/supabase";
 import { EVT_JOURNEE } from "@/lib/finSeance";
+import { decaler } from "@/lib/projection";
 import { reglagesPourBase, situationDeLigne, type ReglagesSituation, type Situation } from "@/lib/situations";
 
 const COLS = "id, genre, debut, fin, statut, motif, reglages";
 
-/** Les situations actives qui ne sont pas encore finies. `null` = illisible. */
+/* Le calendrier se relit sur les sept derniers jours : une situation finie
+   hier doit encore dire que ses jours n'étaient pas des jours de séance,
+   sinon ils passeraient pour manqués. Elle n'agit plus pour autant :
+   `situationsDuJour` regarde ses dates. */
+const JOURS_PASSES = 8;
+
+/** Les situations actives, en cours, à venir ou finies depuis peu. `null` = illisible. */
 export async function lireSituations(userId: string, aujourdhui: string): Promise<Situation[] | null> {
   if (!userId) return [];
   const { data, error } = await createClient()
@@ -23,7 +30,7 @@ export async function lireSituations(userId: string, aujourdhui: string): Promis
     .select(COLS)
     .eq("user_id", userId)
     .eq("statut", "active")
-    .gte("fin", aujourdhui)
+    .gte("fin", decaler(aujourdhui, -JOURS_PASSES))
     .order("debut", { ascending: true });
   if (error) {
     /* La table pas encore créée vaut « aucune » : rien n'agit, rien ne casse. */
@@ -78,10 +85,14 @@ export async function modifierSituation(userId: string, id: string, s: { debut: 
 }
 
 /** « Arrêter maintenant » : la situation se ferme, les séances reprennent leur forme. */
-export async function arreterSituation(userId: string, id: string): Promise<boolean> {
+export async function arreterSituation(userId: string, s: Pick<Situation, "id" | "debut" | "reglages">, aujourdhui: string): Promise<boolean> {
+  const id = s.id;
+  /* Un sport ou des jours déjà commencés se terminent hier, au lieu de
+     disparaître : leurs jours passés ne deviennent pas des jours manqués. */
+  const raccourcir = (s.reglages.genre === "autre_sport" || s.reglages.genre === "jours_moment") && s.debut < aujourdhui;
   const { data, error } = await createClient()
     .from("situations")
-    .update({ statut: "terminee", fermee_le: new Date().toISOString() })
+    .update(raccourcir ? { fin: decaler(aujourdhui, -1) } : { statut: "terminee", fermee_le: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("id", id)
     .eq("statut", "active")

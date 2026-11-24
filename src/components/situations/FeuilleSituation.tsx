@@ -24,7 +24,7 @@ import type { ProgrammeEtCycle } from "@/lib/programme";
 import { decaler } from "@/lib/projection";
 import { baseZone, LE_MIEN } from "@/lib/zonesMouvements";
 import {
-  dateCourte, effetGene, JOURS_REEVALUATION, MINUTES_MAX, MINUTES_MIN, nomGene, pausesDecidees,
+  dateCourte, effetGene, JOURS_MAX, JOURS_REEVALUATION, lesJours, MINUTES_MAX, MINUTES_MIN, nomGene, pausesDecidees,
   type EffetSeance, type EtatMouvement, type GenreSituation, type LieuSituation, type ModeGene,
   type ReglagesSituation, type SeancePourGene, type Situation,
 } from "@/lib/situations";
@@ -41,10 +41,15 @@ const TITRES: Record<GenreSituation, string> = {
   gene: "Où est-ce que ça fait mal ?",
   energie: "Je manque d’énergie",
   materiel: "Je n’ai pas mon matériel",
+  evenement: "J’ai un événement",
+  autre_sport: "Je fais un autre sport",
+  jours_moment: "Mes jours changent un moment",
 };
+const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
+const JOURS_GENRE = (g: GenreSituation) => g === "autre_sport" || g === "jours_moment";
 
 export default function FeuilleSituation({
-  userId, genre, existante, programme, gen, aujourdhui, onClose, onFini, onAbsence,
+  userId, genre, existante, programme, gen, aujourdhui, onClose, onFini, onAbsence, joursChoisis = true, onMesJours,
 }: {
   userId: string;
   genre: GenreSituation;
@@ -58,11 +63,22 @@ export default function FeuilleSituation({
   onFini: (message: string) => void;
   /** « Moins d'énergie » → « Je fais une pause » ouvre l'absence. */
   onAbsence?: () => void;
+  /** Sans jours choisis, un sport et des jours qui changent n'auraient
+   *  aucun effet : on les choisit d'abord. */
+  joursChoisis?: boolean;
+  onMesJours?: () => void;
 }) {
   const r0 = existante?.reglages;
-  const debut = existante ? existante.debut : aujourdhui;
   const [jours, setJours] = useState<number | null>(existante ? null : 14);
-  const fin = jours === null && existante ? existante.fin : decaler(aujourdhui, jours || JOURS_REEVALUATION);
+  /* Un événement : son jour est la fin, et la situation commence la veille. */
+  const [dateEvt, setDateEvt] = useState(existante && genre === "evenement" ? existante.fin : decaler(aujourdhui, 7));
+  const [nom, setNom] = useState(existante?.motif ?? "");
+  const [semaine, setSemaine] = useState<Set<number>>(new Set(r0?.genre === "autre_sport" || r0?.genre === "jours_moment" ? r0.jours : []));
+  const fin = genre === "evenement" ? dateEvt
+    : jours === null && existante ? existante.fin : decaler(aujourdhui, jours || JOURS_REEVALUATION);
+  const debut = genre === "evenement" ? (dateEvt > aujourdhui ? decaler(dateEvt, -1) : dateEvt)
+    : existante ? existante.debut : aujourdhui;
+  const basculeJour = (j: number) => setSemaine((p) => { const n = new Set(p); if (n.has(j)) n.delete(j); else n.add(j); return n; });
   const [minutes, setMinutes] = useState(r0?.genre === "moins_de_temps" ? r0.minutes : 25);
   const [lieu, setLieu] = useState<LieuSituation>(r0?.genre === "materiel" ? r0.lieu : "poids");
   const [zones, setZones] = useState<Set<string>>(new Set(r0?.genre === "gene" ? r0.zones : []));
@@ -113,46 +129,75 @@ export default function FeuilleSituation({
     if (genre === "moins_de_temps") return { genre, minutes };
     if (genre === "energie") return { genre, mode: "leger" };
     if (genre === "materiel") return { genre, lieu };
+    if (genre === "evenement") return { genre };
+    if (genre === "autre_sport" || genre === "jours_moment") return semaine.size ? { genre, jours: [...semaine].sort((a, b) => a - b) } : null;
     if (!zones.size) return null;
     return { ...reglagesGene, pauses: effet ? { ...pausesDecidees(effet), ...pauses } : pauses };
   };
 
   const quand = jours === 0 ? `, on refait le point le ${dateCourte(fin)}` : ` jusqu’au ${dateCourte(fin)}`;
+  /* « 8 déc. » finit déjà par un point. */
+  const quandPoint = quand.endsWith(".") ? quand : `${quand}.`;
   const libelleBouton = (() => {
     if (existante) return "Enregistrer";
     if (genre === "moins_de_temps") return `Séances à ${minutes} min${quand}`;
     if (genre === "energie") return `Alléger mes séances${quand}`;
     if (genre === "materiel") return `${lieu === "halteres" ? "Aux haltères" : "Sans matériel"}${quand}`;
+    if (genre === "evenement") return `Noter mon événement du ${dateCourte(dateEvt)}`;
+    if (genre === "autre_sport") return semaine.size ? "Noter mon sport" : "Choisis ses jours";
+    if (genre === "jours_moment") return semaine.size ? "Changer mes jours pour l’instant" : "Choisis tes jours";
     const z = [...zones];
     const quoi = z.length > 1 ? "ces endroits" : z.length ? (LE_MIEN[baseZone(z[0]) ?? "Cou"] ?? "cet endroit") : "cet endroit";
     return `Ménager ${quoi}${quand}`;
   })();
 
+  /* Le nom d'un événement ou d'un sport, écrit par la personne. Jamais lu comme une règle. */
+  const nomPourBase = genre === "evenement" || genre === "autre_sport" ? nom.trim().slice(0, 60) || null : existante?.motif ?? null;
+
   const valider = async () => {
     const r = reglages();
-    if (!r) { setErreur("Touche d’abord l’endroit qui te fait mal."); return; }
+    if (!r) { setErreur(JOURS_GENRE(genre) ? "Choisis au moins un jour de la semaine." : "Touche d’abord l’endroit qui te fait mal."); return; }
+    if (genre === "evenement" && (dateEvt < aujourdhui || dateEvt > decaler(aujourdhui, JOURS_MAX))) { setErreur("Choisis une date dans les quatre prochains mois."); return; }
     setEnvoi(true); setErreur(null);
     const res = existante
-      ? await modifierSituation(userId, existante.id, { debut, fin, reglages: r })
-      : await creerSituation(userId, { debut, fin, reglages: r });
+      ? await modifierSituation(userId, existante.id, { debut, fin, reglages: r, motif: nomPourBase })
+      : await creerSituation(userId, { debut, fin, reglages: r, motif: nomPourBase });
     setEnvoi(false);
     if (!res.ok) {
       setErreur(res.raison === "chevauche"
-        ? "Tu en as déjà une de ce genre sur ces jours. Touche son billet pour la changer."
+        ? (genre === "evenement" ? "Tu as déjà un événement sur ces jours. Touche son billet pour le changer." : "Tu en as déjà une de ce genre sur ces jours. Touche son billet pour la changer.")
         : "Ça n’a pas pris, réessaie dans un instant.");
       return;
     }
-    onFini(existante ? "C’est changé." : r.genre === "gene" ? `${nomGene(r.zones)}, ménagé${quand}.` : `C’est noté${quand}.`);
+    onFini(existante ? "C’est changé." : r.genre === "gene" ? `${nomGene(r.zones)}, ménagé${quandPoint}` : r.genre === "evenement" ? `C’est noté pour le ${dateCourte(dateEvt)}. Bon courage !` : `C’est noté${quandPoint}`);
   };
 
   const stop = async () => {
     if (!existante) return;
     setEnvoi(true);
-    const ok = await arreterSituation(userId, existante.id);
+    const ok = await arreterSituation(userId, existante, aujourdhui);
     setEnvoi(false);
     if (ok) onFini("C’est arrêté. Tes séances reprennent leur forme normale.");
     else setErreur("Ça n’a pas pris, réessaie dans un instant.");
   };
+
+  if (JOURS_GENRE(genre) && !joursChoisis) {
+    return (
+      <FeuilleBas onClose={onClose} niveau={106}>
+        <div className="px-5 pt-2" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+          <p className="text-[20px]" style={{ color: "var(--text-0)", fontWeight: 800, fontVariationSettings: "var(--w-voix)" }}>{TITRES[genre]}</p>
+          <p className="text-[16px] mt-2" style={{ color: "var(--text-1)" }}>
+            Choisis d’abord tes jours d’entraînement habituels. Le planning saura alors quoi déplacer.
+          </p>
+          <button type="button" onClick={onMesJours}
+            className="w-full mt-4 py-3 rounded-2xl text-[16px] font-extrabold text-white cursor-pointer border-none"
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "var(--ombre-action)" }}>
+            Choisir mes jours
+          </button>
+        </div>
+      </FeuilleBas>
+    );
+  }
 
   return (
     <FeuilleBas onClose={onClose} niveau={106} hauteur={genre === "gene" ? "90dvh" : undefined}>
@@ -193,6 +238,43 @@ export default function FeuilleSituation({
           </Reglage>
         )}
 
+        {(genre === "evenement" || genre === "autre_sport") && (
+          <Reglage nom={genre === "evenement" ? "C’est quoi" : "Quel sport"}>
+            <input value={nom} onChange={(e) => setNom(e.target.value)} maxLength={60}
+              placeholder={genre === "evenement" ? "Un match, un semi…" : "Foot, natation…"}
+              className="w-full px-3 py-2 rounded-[12px] border-none outline-none"
+              style={{ background: "rgba(var(--text-3-rgb),0.12)", color: "var(--text-0)" }} />
+          </Reglage>
+        )}
+
+        {genre === "evenement" && (
+          <Reglage nom="Le jour">
+            <input type="date" value={dateEvt} min={aujourdhui} max={decaler(aujourdhui, JOURS_MAX)}
+              onChange={(e) => { if (e.target.value) setDateEvt(e.target.value); }}
+              className="w-full px-3 py-2 rounded-[12px] border-none outline-none"
+              style={{ background: "rgba(var(--text-3-rgb),0.12)", color: "var(--text-0)" }} />
+          </Reglage>
+        )}
+
+        {JOURS_GENRE(genre) && (
+          <Reglage nom={genre === "autre_sport" ? "Ses jours" : "Mes jours d’entraînement"} long>
+            <div role="group" className="flex gap-1.5">
+              {LETTRES.map((l, i) => {
+                const j = i + 1, actif = semaine.has(j);
+                return (
+                  <button key={j} type="button" aria-pressed={actif} onClick={() => basculeJour(j)}
+                    aria-label={["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"][i]}
+                    className="flex-1 h-10 rounded-[12px] text-[13px] font-bold border-none cursor-pointer"
+                    style={{ background: actif ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--text-3-rgb),0.14)", color: actif ? "#fff" : "var(--text-1)" }}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+          </Reglage>
+        )}
+
+        {genre !== "evenement" && (
         <Reglage nom={existante ? "Jusqu’au" : "Jusqu’à quand"} long>
           <Segment valeur={jours === null ? "" : String(jours)}
             options={DUREES.map((d) => ({ v: String(d.j), l: d.label }))}
@@ -201,6 +283,7 @@ export default function FeuilleSituation({
             <p className="text-[13px] mt-1.5" style={{ color: "var(--text-2)" }}>Aujourd’hui, jusqu’au {dateCourte(existante.fin)}.</p>
           )}
         </Reglage>
+        )}
 
         {genre === "gene" && (
           <Reglage nom="Les mouvements qui sollicitent cet endroit" long>
@@ -213,14 +296,14 @@ export default function FeuilleSituation({
         <div className="mt-3.5 p-3.5 rounded-[18px]" style={{ background: "rgba(139,92,246,.07)" }}>
           <p className="text-[13px] font-bold mb-2" style={{ color: "var(--exp-encre)" }}>Ce que ça change</p>
           {genre === "moins_de_temps" && (
-            <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
-              Tes séances passent à <b className="vy-nombre">{minutes}</b> min{quand}. Chacune garde ses exercices principaux d’abord. Le reste de ton programme ne change pas.
+            <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+              Tes séances passent à <b className="vy-nombre">{minutes}</b> min{quandPoint} Chacune garde ses exercices principaux d’abord. Le reste de ton programme ne change pas.
             </p>
           )}
           {genre === "energie" && (
             <>
-              <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
-                Chaque exercice perd une série{quand}. Les séances restent les mêmes, en plus doux.
+              <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+                Chaque exercice perd une série{quandPoint} Les séances restent les mêmes, en plus doux.
               </p>
               {onAbsence && (
                 <button type="button" onClick={onAbsence} className="mt-2 text-[13px] font-bold bg-transparent border-none p-0 cursor-pointer underline underline-offset-[3px]" style={{ color: "var(--exp-encre)" }}>
@@ -230,17 +313,32 @@ export default function FeuilleSituation({
             </>
           )}
           {genre === "materiel" && (
-            <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
-              Tes séances se préparent {lieu === "halteres" ? "avec des haltères" : "sans matériel"}{quand}. Une séance déjà réservée garde ses exercices.
+            <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+              Tes séances se préparent {lieu === "halteres" ? "avec des haltères" : "sans matériel"}{quandPoint} Une séance déjà réservée garde ses exercices.
+            </p>
+          )}
+          {genre === "evenement" && (
+            <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+              {dateEvt > aujourdhui ? "La veille, chaque exercice perd une série. " : ""}{joursChoisis ? <>Le {dateCourte(dateEvt)}, pas de séance : ton événement est l’effort du jour. Une séance prévue ce jour-là passe au jour d’entraînement suivant.</> : <>Le {dateCourte(dateEvt)} reste à ton événement.</>}
+            </p>
+          )}
+          {genre === "autre_sport" && (
+            <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+              {semaine.size ? <>Plus de séance {lesJours([...semaine])}{quandPoint} Une séance prévue ces jours-là passe au jour d’entraînement suivant.</> : "Touche les jours où tu fais ton autre sport."}
+            </p>
+          )}
+          {genre === "jours_moment" && (
+            <p className="text-[13px]" style={{ color: "var(--text-1)" }}>
+              {semaine.size ? <>Tes séances tombent {lesJours([...semaine])}{quand}, puis tes jours habituels reviennent. Ton programme garde son ordre.</> : "Touche les jours où tu peux t’entraîner pendant cette période."}
             </p>
           )}
           {genre === "gene" && (
             !zones.size ? (
-              <p className="text-[14px]" style={{ color: "var(--text-1)" }}>Touche l’endroit qui te fait mal. Tu verras ici chaque mouvement concerné, séance par séance.</p>
+              <p className="text-[13px]" style={{ color: "var(--text-1)" }}>Touche l’endroit qui te fait mal. Tu verras ici chaque mouvement concerné, séance par séance.</p>
             ) : !programme ? (
-              <p className="text-[14px]" style={{ color: "var(--text-1)" }}>Les mouvements qui sollicitent cet endroit seront {mode === "alleger" ? "allégés" : "écartés"} de tes séances.</p>
+              <p className="text-[13px]" style={{ color: "var(--text-1)" }}>Les mouvements qui sollicitent cet endroit seront {mode === "alleger" ? "allégés" : "écartés"} de tes séances.</p>
             ) : !effet ? (
-              <p className="text-[14px]" style={{ color: "var(--text-3)" }}>Je regarde tes séances…</p>
+              <p className="text-[13px]" style={{ color: "var(--text-3)" }}>Je regarde tes séances…</p>
             ) : (
               <ApercuGene effet={effet} mode={mode} fin={fin}
                 onMouvement={(id, nom, etat) => { if (mode !== "un") changerMode("un"); setChoix((c) => ({ ...c, [`${id}/${nom}`]: SUIVANT[etat] })); }}
@@ -289,14 +387,14 @@ function ApercuGene({ effet, mode, fin, onMouvement, onPause }: {
 }) {
   const touchees = effet.filter((x) => x.touches.length || x.inconnus.length);
   const intactes = effet.filter((x) => !x.touches.length && !x.inconnus.length);
-  if (!touchees.length) return <p className="text-[14px]" style={{ color: "var(--text-1)" }}>Aucun mouvement de ton programme ne sollicite cet endroit. Tes séances ne changent pas.</p>;
+  if (!touchees.length) return <p className="text-[13px]" style={{ color: "var(--text-1)" }}>Aucun mouvement de ton programme ne sollicite cet endroit. Tes séances ne changent pas.</p>;
   const ev = touchees.reduce((n, x) => n + x.evites, 0);
   const lg = touchees.reduce((n, x) => n + x.legers, 0);
   const mv = (n: number) => `${n} mouvement${n > 1 ? "s" : ""}`;
   const quoi = [ev ? `${mv(ev)} à éviter` : "", lg ? `${mv(lg)} en plus léger` : ""].filter(Boolean).join(" et ");
   return (
     <div>
-      <p className="text-[14px]" style={{ color: "var(--text-0)" }}>
+      <p className="text-[13px]" style={{ color: "var(--text-0)" }}>
         {quoi ? `${quoi}, dans ${touchees.length} séance${touchees.length > 1 ? "s" : ""} sur ${effet.length}.` : "Tous les mouvements restent comme prévu."}
       </p>
       {mode === "un" && <p className="text-[13px] mt-1" style={{ color: "var(--text-2)" }}>Touche un mouvement pour choisir ce qu’il devient.</p>}
@@ -313,7 +411,7 @@ function ApercuGene({ effet, mode, fin, onMouvement, onPause }: {
               className="grid items-center w-full text-left bg-transparent border-none cursor-pointer py-1"
               style={{ gridTemplateColumns: "36px minmax(0,1fr) auto", gap: 10 }}>
               <span style={{ opacity: t.etat === "eviter" ? 0.45 : 1 }}><ExerciseThumb name={t.nom} size={36} /></span>
-              <b className="text-[14px] font-semibold" style={{ color: t.etat === "eviter" ? "var(--text-2)" : "var(--text-0)", textDecoration: t.etat === "eviter" ? "line-through" : undefined }}>{t.nom}</b>
+              <b className="text-[13px] font-semibold" style={{ color: t.etat === "eviter" ? "var(--text-2)" : "var(--text-0)", textDecoration: t.etat === "eviter" ? "line-through" : undefined }}>{t.nom}</b>
               <span className="text-[13px] font-bold" style={{ color: t.etat === "garder" ? "var(--text-2)" : "var(--exp-encre)" }}>{ETAT[t.etat]}</span>
             </button>
           ))}

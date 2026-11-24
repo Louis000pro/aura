@@ -667,7 +667,7 @@ async function appliquerJoursEntrainement(
     admin.from(sc.table).select(`programme_id, rang, etape_consommee_id, consommee_le, date, ${sc.colStatut}`).in("programme_id", progIds).not("rang", "is", null),
     admin.from("adaptations_entrainement").select("programme_id, debut, fin, axes, statut").in("programme_id", progIds).eq("statut", "active"),
     /* Lot 2 · une gêne met une séance en pause : on ne la rappelle pas. */
-    admin.from("situations").select("id, user_id, genre, debut, fin, statut, motif, reglages").in("user_id", comptes).eq("statut", "active").gte("fin", today),
+    admin.from("situations").select("id, user_id, genre, debut, fin, statut, motif, reglages").in("user_id", comptes).eq("statut", "active").gte("fin", decaler(today, -8)),
   ]);
   const sitAbsente = sits.error?.code === "42P01" || sits.error?.code === "PGRST205";
   const adaptAbsente = adapt.error?.code === "42P01" || adapt.error?.code === "PGRST205";

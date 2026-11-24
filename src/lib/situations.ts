@@ -10,7 +10,14 @@
      garde moins de la moitié de ses mouvements se met en pause et les
      autres prennent sa place ;
    · moins d'énergie : chaque exercice perd une série ;
-   · pas son matériel : les séances se composent pour un autre lieu.
+   · pas son matériel : les séances se composent pour un autre lieu ;
+   · un événement (un match, une course) : la veille, une série de moins,
+     et le jour même, pas de séance (l'événement est l'effort du jour) ;
+   · un autre sport : ses jours de la semaine ne portent pas de séance ;
+   · des jours qui changent pour un moment : d'autres jours de la semaine,
+     le temps de la période, puis les jours choisis reviennent.
+   Les trois derniers passent par le calendrier (`calendrierAvecSituations`) :
+   ils ajoutent des jours retirés ou en plus, jamais écrits en base.
    L'absence a sa propre table (R9a) et ne passe pas par ici.
 
    ⚠️ UNE SITUATION NE MODIFIE JAMAIS LE PROGRAMME. Elle se lit au moment
@@ -23,8 +30,9 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { sollicite } from "@/lib/zonesMouvements";
+import type { Calendrier, ExceptionJour } from "@/lib/projection";
 
-export type GenreSituation = "moins_de_temps" | "gene" | "energie" | "materiel";
+export type GenreSituation = "moins_de_temps" | "gene" | "energie" | "materiel" | "evenement" | "autre_sport" | "jours_moment";
 export type EtatMouvement = "eviter" | "leger" | "garder";
 export type ModeGene = "eviter" | "alleger" | "un";
 export type LieuSituation = "poids" | "halteres";
@@ -41,7 +49,13 @@ export type ReglagesSituation =
       pauses?: Record<string, boolean>;
     }
   | { genre: "energie"; mode: "leger" }
-  | { genre: "materiel"; lieu: LieuSituation };
+  | { genre: "materiel"; lieu: LieuSituation }
+  /** Le jour de l'événement est la fin de la situation ; elle commence la veille. */
+  | { genre: "evenement" }
+  /** Les jours de la semaine pris par l'autre sport (1 = lundi). */
+  | { genre: "autre_sport"; jours: number[] }
+  /** Les jours d'entraînement le temps de la période (1 = lundi). */
+  | { genre: "jours_moment"; jours: number[] };
 
 export type Situation = {
   id: string;
@@ -57,6 +71,12 @@ export const MINUTES_MAX = 90;
 /** « Je te dirai » : on refait le point dans quatre semaines. */
 export const JOURS_REEVALUATION = 28;
 export const JOURS_MAX = 120;
+
+/** Des jours de la semaine propres : entiers de 1 à 7, sans doublon, triés. */
+export function joursPropres(jours: unknown): number[] {
+  if (!Array.isArray(jours)) return [];
+  return [...new Set(jours.filter((j): j is number => Number.isInteger(j) && j >= 1 && j <= 7))].sort((a, b) => a - b);
+}
 
 /* ── Lecture ───────────────────────────────────────────────────────── */
 
@@ -87,6 +107,10 @@ export function situationDeLigne(r: {
   if (r.genre === "moins_de_temps" && typeof g.minutes === "number") return { ...base, reglages: { genre: "moins_de_temps", minutes: g.minutes } };
   if (r.genre === "energie" && g.mode === "leger") return { ...base, reglages: { genre: "energie", mode: "leger" } };
   if (r.genre === "materiel" && (g.lieu === "poids" || g.lieu === "halteres")) return { ...base, reglages: { genre: "materiel", lieu: g.lieu } };
+  if (r.genre === "evenement") return { ...base, reglages: { genre: "evenement" } };
+  if ((r.genre === "autre_sport" || r.genre === "jours_moment") && joursPropres(g.jours).length) {
+    return { ...base, reglages: { genre: r.genre, jours: joursPropres(g.jours) } };
+  }
   if (r.genre === "gene" && Array.isArray(g.zones) && (g.mode === "eviter" || g.mode === "alleger" || g.mode === "un")) {
     return {
       ...base,
@@ -220,9 +244,12 @@ export function appliquerSituations<T>(
       notes.push("Tous les mouvements sollicitent l’endroit qui te gêne : vas-y doucement");
     }
   }
-  if (deGenre(actives, "energie")) {
+  /* La veille d'un événement : une série de moins. Jamais deux de moins si
+     l'énergie en retire déjà une. */
+  const veille = actives.some((x) => x.reglages.genre === "evenement" && date < x.fin);
+  if (deGenre(actives, "energie") || veille) {
     sortie = sortie.map((x) => (acces.series(x) > 1 ? acces.avecSeries(x, acces.series(x) - 1) : x));
-    notes.push("Une série de moins par exercice");
+    notes.push(deGenre(actives, "energie") ? "Une série de moins par exercice" : "Une série de moins, la veille de ton événement");
   }
   const temps = deGenre(actives, "moins_de_temps");
   return { liste: sortie, minutes: temps ? temps.reglages.minutes : null, notes };
@@ -232,6 +259,63 @@ export function appliquerSituations<T>(
 export function lieuDuJour(liste: readonly Situation[], date: string): LieuSituation | null {
   const m = deGenre(situationsDuJour(liste, date), "materiel");
   return m ? m.reglages.lieu : null;
+}
+
+/* ── Le calendrier ───────────────────────────────────────────────── */
+
+function jourDe(date: string): number {
+  const d = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return d === 0 ? 7 : d;
+}
+function lendemain(date: string): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+function joursEntre(debut: string, fin: string): string[] {
+  const out: string[] = [];
+  for (let d = debut; d <= fin && out.length <= JOURS_MAX + 1; d = lendemain(d)) out.push(d);
+  return out;
+}
+
+/**
+ * Le calendrier vu à travers les situations : le jour d'un événement et
+ * les jours d'un autre sport deviennent des jours sans séance, et des
+ * jours qui changent remplacent la règle le temps de la période.
+ *
+ * ⚠️ UNE EXCEPTION ÉCRITE PAR LA PERSONNE L'EMPORTE TOUJOURS : on ne
+ * pose rien sur un jour qui en porte déjà une. Rien ne s'écrit en base.
+ */
+export function calendrierAvecSituations(cal: Calendrier, situations: readonly Situation[]): Calendrier {
+  const actives = situations.filter((s) => s.statut === "active");
+  if (!actives.some((s) => s.reglages.genre === "evenement" || s.reglages.genre === "autre_sport" || s.reglages.genre === "jours_moment")) return cal;
+  const posees = new Map<string, ExceptionJour>();
+  for (const e of cal.exceptions) posees.set(e.date, e);
+  const ajouts = new Map<string, ExceptionJour["genre"]>();
+  const regle = joursPropres(cal.jours);
+  /* Les jours qui changent d'abord : un événement ou un autre sport
+     retirent ensuite un jour, quelle que soit la règle du moment. */
+  for (const s of actives) {
+    if (s.reglages.genre !== "jours_moment") continue;
+    const nouveaux = s.reglages.jours;
+    for (const d of joursEntre(s.debut, s.fin)) {
+      const j = jourDe(d);
+      const avant = regle.includes(j) && !(cal.effetLe && d < cal.effetLe);
+      const apres = nouveaux.includes(j);
+      if (avant && !apres) ajouts.set(d, "pas_de_seance");
+      else if (!avant && apres) ajouts.set(d, "seance_en_plus");
+    }
+  }
+  for (const s of actives) {
+    const r = s.reglages;
+    if (r.genre === "evenement") ajouts.set(s.fin, "pas_de_seance");
+    else if (r.genre === "autre_sport") {
+      for (const d of joursEntre(s.debut, s.fin)) if (r.jours.includes(jourDe(d))) ajouts.set(d, "pas_de_seance");
+    }
+  }
+  const exceptions = [...cal.exceptions];
+  for (const [date, genre] of ajouts) if (!posees.has(date)) exceptions.push({ date, genre, parSituation: true });
+  return { ...cal, exceptions };
 }
 
 /* ── Les mots ─────────────────────────────────────────────────────── */
@@ -250,7 +334,18 @@ export const TITRE: Record<GenreSituation, string> = {
   gene: "Une gêne",
   energie: "Moins d’énergie",
   materiel: "Sans mon matériel",
+  evenement: "Un événement",
+  autre_sport: "Un autre sport",
+  jours_moment: "D’autres jours",
 };
+
+const NOMS_JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+/** « le mardi et le jeudi », « le samedi ». */
+export function lesJours(jours: readonly number[]): string {
+  const n = joursPropres(jours).map((j) => NOMS_JOURS[j - 1]);
+  if (n.length <= 1) return n.length ? `le ${n[0]}` : "aucun jour";
+  return `le ${n.slice(0, -1).join(", le ")} et le ${n[n.length - 1]}`;
+}
 
 /** Ce que la situation change, en quelques mots (le billet). */
 export function effetCourt(s: Situation, nomsEtapes: (id: string) => string | null): string {
@@ -259,6 +354,9 @@ export function effetCourt(s: Situation, nomsEtapes: (id: string) => string | nu
     case "moins_de_temps": return `séances à ${r.minutes} min`;
     case "energie": return "une série de moins par exercice";
     case "materiel": return r.lieu === "halteres" ? "séances aux haltères" : "séances sans matériel";
+    case "evenement": return `le ${dateCourte(s.fin)}, pas de séance`;
+    case "autre_sport": return `pas de séance ${lesJours(r.jours)}`;
+    case "jours_moment": return `séances ${lesJours(r.jours)}`;
     case "gene": {
       const pauses = Object.entries(r.pauses ?? {}).filter(([, p]) => p).map(([id]) => nomsEtapes(id)).filter((n): n is string => !!n);
       const base = r.mode === "alleger" ? "mouvements allégés" : "mouvements écartés";

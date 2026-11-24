@@ -1114,6 +1114,12 @@ const REPLIQUES = {
   "proposition.fin.materiel": {
     commun: "Tes séances sans ton matériel habituel s’arrêtent demain. Tu l’as retrouvé ?",
   },
+  "proposition.fin.autre_sport": {
+    commun: "Ton autre sport ne prend plus ses jours à partir d’après-demain. Il continue ?",
+  },
+  "proposition.fin.jours_moment": {
+    commun: "Tes jours habituels reviennent après-demain. Tu gardes encore ceux-là un peu ?",
+  },
   "proposition.raccourcies": {
     commun: (c) => `Tes trois dernières séances ont duré autour de ${c.minutes ?? 30} min. Je règle ton programme sur ${c.minutes ?? 30} min ?`,
   },

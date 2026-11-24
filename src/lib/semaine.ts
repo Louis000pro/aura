@@ -66,6 +66,8 @@ export type LigneSemaine<T> = {
   entrainement: boolean;
   /** Une séance en plus posée sur ce jour seulement. */
   enPlus: boolean;
+  /** Ce jour est retiré ou ajouté par une situation, pas par un geste. */
+  parSituation?: boolean;
   etat: EtatJourSemaine;
   elements: ElementJour<T>[];
 };
@@ -130,6 +132,7 @@ export function lignesSemaine<T extends { id: string }>(input: {
     return {
       date, jour: jourDeSemaine(date), aujourdhui: date === aujourdhui, passe,
       entrainement, enPlus: ex?.genre === "seance_en_plus", etat, elements,
+      ...(ex?.parSituation ? { parSituation: true } : {}),
     };
   });
 }

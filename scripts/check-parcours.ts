@@ -255,7 +255,7 @@ t("chaque programme a son badge, au catalogue", PROGRAMMES.every((p) => badgePar
 t("le Guide sait qu'un programme met le cycle en pause", lire("src/lib/guideMoteur.ts").includes("le cycle ci-dessous est en pause"));
 const page = lire("src/app/progression/page.tsx");
 t("pendant un programme, « Ma semaine » montre les séances du programme",
-  page.includes("prevues={journee.parcours") && page.includes("journee.parcours ? setVueParcours({ genre: \"semaine\" }) : setSheet(\"semaine\")"));
+  page.includes("prevues={journee.parcours") && page.includes("onOrganise={() => setVueParcours({ genre: \"semaine\" })}"));
 
 console.log(`\n${ok} contrôles passent, ${ko} échouent.`);
 if (ko > 0) process.exit(1);

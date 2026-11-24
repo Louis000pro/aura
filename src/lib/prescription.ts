@@ -72,7 +72,7 @@ export function empreinteModele(m: ModeleDeLOccurrence): string {
 
 type ClientLike = ReturnType<typeof createClient>;
 
-const COLS_LIGNE = "emplacement, exercice_cle, exercice_nom, fonction, statut, series, mesure, reps_min, reps_max, reps_cible, duree_s, repos_s, transition_s, charge_type, unite";
+export const COLS_LIGNE = "emplacement, exercice_cle, exercice_nom, fonction, statut, series, mesure, reps_min, reps_max, reps_cible, duree_s, repos_s, transition_s, charge_type, unite";
 
 /** Une ligne lue en base → la forme commune. */
 export function versLigne(r: Record<string, unknown>): LignePrescription {

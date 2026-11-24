@@ -837,6 +837,28 @@ await setUid(U);
     const l = (await q(`select charge_cible from occurrence_exercices where intention_id=$1 and emplacement=$2`, [prep.id, LD[k].emplacement])).rows[0];
     t("Vérif · journal ancien sans emplacement : repli sur l'ordinal, la copie suivie est restaurée", Number(l.charge_cible) === 42.5, JSON.stringify(l));
   }
+{
+  const sqlManques = readFileSync(new URL("../supabase/migrations/20261124_entrainement_manques.sql", import.meta.url), "utf8");
+  const fonction = sqlManques.slice(sqlManques.indexOf("create or replace function public.modifier_occurrence"));
+  await ex(fonction); await ex(fonction);
+  const { P, E } = await programmeRF();
+  const prep = await rpc("ecrire_occurrence", { intention: occRF(P, E, { rang: 4 }), modele_id: null, lignes: LD });
+  const avant = (await q("select * from intentions_entrainement where id=$1", [prep.id])).rows[0];
+  const jour = avant.date ? new Date(avant.date).toISOString().slice(0, 10) : null;
+  const demande = { id: prep.id, date: jour, programme_id: P, etape_id: E, rang: 4, lignes: LD.slice(0, 2).map((l, n) => ({ ...l, emplacement: n })) };
+  t("Ce jour-là · un autre rang : changée, rien d'écrit",
+    (await rpc("modifier_occurrence", { ...demande, rang: 5 })).resultat === "changee"
+    && (await q("select count(*)::int n from occurrence_exercices where intention_id=$1", [prep.id])).rows[0].n === LD.length);
+  let refuse = false;
+  try { await rpc("modifier_occurrence", { ...demande, lignes: [] }); } catch { refuse = true; }
+  t("Ce jour-là · une liste vide est refusée et la réservation reste",
+    refuse && (await q("select count(*)::int n from occurrence_exercices where intention_id=$1", [prep.id])).rows[0].n === LD.length);
+  const r = await rpc("modifier_occurrence", demande);
+  const apres = (await q("select * from intentions_entrainement where programme_id=$1 and rang=4", [P])).rows;
+  t("Ce jour-là · les exercices changent, le jour, le rang et l'étape restent",
+    r.resultat === "ok" && apres.length === 1 && apres[0].etape_consommee_id === E && apres[0].statut === "prevue"
+    && String(apres[0].date) === String(avant.date) && apres[0].exercise_list.length === 2, JSON.stringify(r));
+}
 }
 
 console.log(`${ok} OK, ${ko} échec(s)`);

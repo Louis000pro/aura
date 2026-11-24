@@ -30,12 +30,14 @@ import { modifierSeance } from "@/lib/programmeVersions";
 import { ajoutsPossibles, doseLigne, motLieu, texteChangementSeance } from "@/lib/vueProgramme";
 import type { EtapeCycle } from "@/lib/programme";
 
-export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, onClose, onEnregistre }: {
+export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, ceJour, onClose, onEnregistre }: {
   etape: EtapeCycle;
   ctx: ContexteComposition;
   lignes: LignePrescription[];
   /** La longueur du cycle : la séance revient tous les N entraînements. */
   tousLes: number;
+  /** « Seulement ce jour-là » : le programme ne change pas. */
+  ceJour?: { quand: string; enregistrer: (lignes: LignePrescription[]) => Promise<string | null> };
   onClose: () => void;
   onEnregistre: (message: string) => void;
 }) {
@@ -55,6 +57,11 @@ export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, on
   const enregistrer = async () => {
     if (!texte || envoi) { if (!texte) onClose(); return; }
     setEnvoi(true); setErreur(null);
+    if (ceJour) {
+      const souci = await ceJour.enregistrer(brouillon);
+      if (souci) { setErreur(souci); setEnvoi(false); } else onEnregistre("");
+      return;
+    }
     const r = await modifierSeance(etape, ctx, lignes, brouillon, texte);
     if (r === "ok") onEnregistre(`${etape.nom} est enregistrée. Ça vaut pour les prochaines fois.`);
     else { setErreur("Ça n’a pas été enregistré. Réessaie dans un instant."); setEnvoi(false); }
@@ -103,7 +110,9 @@ export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, on
               {tousLes > 1 ? <> · tous les <span className="vy-nombre">{tousLes}</span> entraînements</> : null} · {motLieu(ctx.lieu)}
             </p>
             <p className="text-[13px] mt-3" style={{ color: "var(--text-3)" }}>
-              Tes changements valent à chaque fois. Une séance déjà posée dans ton planning garde ses exercices.
+              {ceJour
+                ? <>Seulement {ceJour.quand} : ton programme ne change pas. Pour les changer à chaque fois, passe par la vue Programme.</>
+                : "Tes changements valent à chaque fois. Une séance déjà posée dans ton planning garde ses exercices."}
             </p>
 
             <div className="mt-4 overflow-hidden" style={{ borderRadius: "var(--r-bloc)", background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--text-3-rgb),0.16)" }}>
@@ -167,10 +176,10 @@ export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, on
                         )}
 
                         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[13px] font-semibold">
-                          <button type="button" onClick={() => changer(i, (x) => ({ ...x, statut: x.statut === "repere" ? "complementaire" : "repere" }))}
+                          {!ceJour && <button type="button" onClick={() => changer(i, (x) => ({ ...x, statut: x.statut === "repere" ? "complementaire" : "repere" }))}
                             className="bg-transparent border-none p-0 cursor-pointer" style={{ color: "var(--exp-encre)" }}>
                             {l.statut === "repere" ? "Ne plus suivre ce mouvement" : "En faire un mouvement principal"}
-                          </button>
+                          </button>}
                           {i > 0 && (
                             <button type="button" onClick={() => { setBrouillon((b) => { const c = [...b]; [c[i - 1], c[i]] = [c[i], c[i - 1]]; return c; }); setOuvert(i - 1); }}
                               className="flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer" style={{ color: "var(--text-2)" }}>
@@ -198,11 +207,11 @@ export default function FeuilleSeanceProgramme({ etape, ctx, lignes, tousLes, on
               </button>
             )}
 
-            <p className="text-[13px] mt-5" style={{ color: "var(--text-2)" }}>
+            {!ceJour && <p className="text-[13px] mt-5" style={{ color: "var(--text-2)" }}>
               {principaux > 0
                 ? <>Vaiiya mesure ta progression sur {principaux === 1 ? "le mouvement principal" : <>les <span className="vy-nombre">{principaux}</span> mouvements principaux</>}. Si tu en changes un, la comparaison repart de zéro pour lui.</>
                 : "Aucun mouvement principal : Vaiiya ne mesurera pas ta progression sur cette séance."}
-            </p>
+            </p>}
             {erreur && <p className="text-[13px] mt-3" style={{ color: "#D93A3A" }}>{erreur}</p>}
           </>
         )}

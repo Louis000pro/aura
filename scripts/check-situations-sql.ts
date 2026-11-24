@@ -63,6 +63,24 @@ t("fermer = statut terminée et sa date",
   (await erreur(`update public.situations set statut = 'terminee', fermee_le = now() where genre = 'energie' and user_id = $1`, [U])) === null);
 t("une situation fermée ne bloque plus le même genre", (await ins("energie", "2026-11-21", "2026-11-22", { mode: "pause" })) === null);
 
+/* Ce qui manquait au lot 2 : trois genres de plus (la seconde partie du
+   fichier touche aux occurrences, hors de ce schéma minimal). */
+const manques = readFileSync(new URL("../supabase/migrations/20261124_entrainement_manques.sql", import.meta.url), "utf8").split("/* « Seulement ce jour-là »")[0];
+await ex(manques);
+await ex(manques);
+t("un événement : la veille et le jour", (await ins("evenement", "2026-11-21", "2026-11-22", {})) === null);
+t("un événement de trois jours est refusé", (await ins("evenement", "2026-12-20", "2026-12-22", {})) !== null);
+t("un événement ne porte aucun réglage", (await ins("evenement", "2026-12-20", "2026-12-21", { jours: [1] })) !== null);
+t("un autre sport : ses jours", (await ins("autre_sport", "2026-11-18", "2026-12-18", { jours: [2, 4] })) === null);
+t("des jours hors de la semaine, en double, vides ou absents sont refusés",
+  (await ins("jours_moment", "2026-12-01", "2026-12-08", { jours: [0] })) !== null
+  && (await ins("jours_moment", "2026-12-01", "2026-12-08", { jours: [1, 1] })) !== null
+  && (await ins("jours_moment", "2026-12-01", "2026-12-08", { jours: [] })) !== null
+  && (await ins("jours_moment", "2026-12-01", "2026-12-08", { jours: "lundi" })) !== null
+  && (await ins("jours_moment", "2026-12-01", "2026-12-08", {})) !== null);
+t("des jours qui changent un moment", (await ins("jours_moment", "2026-12-01", "2026-12-08", { jours: [1, 6] })) === null);
+t("les anciens genres tiennent toujours", (await ins("materiel", "2027-01-01", "2027-01-05", { lieu: "halteres" })) === null);
+
 await ex(`grant usage on schema public to authenticated;`);
 await ex(`set role authenticated; select set_config('test.uid', '${V}', false);`);
 const vus = await q(`select count(*)::int as n from public.situations`);

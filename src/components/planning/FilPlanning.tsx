@@ -32,6 +32,7 @@ import type { EtapeCycle, ProgrammeEtCycle } from "@/lib/programme";
 import { resolutionDuProgramme, type ResolutionProgramme } from "@/lib/projectionBase";
 import { decaler } from "@/lib/projection";
 import { ABR_JOURS, lignesSemaine, semaineDe, type ElementJour, type LigneSemaine, type SeanceJournal } from "@/lib/semaine";
+import { deplacerSeancePosee } from "@/lib/seancePosee";
 import { changerDeJour, echangerDeJour, lireJournal, type CibleAffichee, type ResultatGeste } from "@/lib/semaineGestes";
 import { rangEnAttente } from "@/lib/occurrences";
 import FeuilleJour, { type Cible } from "@/components/planning/FeuilleJour";
@@ -49,6 +50,11 @@ import { lireEcartees, lireFaitsPropositions, noterEcartee, type FaitsLus } from
 import PropositionGuide from "@/components/planning/PropositionGuide";
 
 export type { ALiberer };
+
+type Prevu = Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>;
+type Pose = Extract<ElementJour<EtapeCycle>, { genre: "pose" }>;
+/** Ce qui a une poignée : une séance du programme, ou une séance posée à côté. */
+export type Glissable = Prevu | Pose;
 
 type Donnees = { intentions: PlanningDay[]; journal: SeanceJournal[]; proj: ResolutionProgramme };
 
@@ -175,6 +181,11 @@ export default function FilPlanning({
     return p.reservee ? !!el.intention : reservable(p.etape.id, p.rang);
   }, [reservable]);
 
+  /* Une séance posée à la main bouge toute seule : elle ne réserve rien. */
+  const glissable = useCallback((el: ElementJour<EtapeCycle> | null): el is Glissable =>
+    deplacable(el) || (!!el && el.genre === "pose" && !!el.intention.id && !el.intention.etapeId && el.intention.status === "planned"),
+  [deplacable]);
+
   const cibleDe = useCallback((el: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>, date: string): CibleAffichee | null => {
     if (!programme) return null;
     return { programmeId: programme.programme.id, etapeId: el.projete.etape.id, rang: el.projete.rang, date, reservationId: el.intention?.id ?? null };
@@ -219,6 +230,19 @@ export default function FilPlanning({
       setEnvoi(false);
     }
   }, [gen, lignes, envoi, cibleDe, deplacable, userId, aujourdhui, apres]);
+
+  const bouger = useCallback(async (de: { element: Glissable; date: string }, vers: string) => {
+    if (de.element.genre === "prevu") { await deplacer({ element: de.element, date: de.date }, vers); return; }
+    const d = de.element.intention;
+    if (!d.id || envoi) return;
+    setEnvoi(true);
+    try {
+      const jour = new Date(vers + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long" });
+      apres(await deplacerSeancePosee(userId, d.id, de.date, vers), `${dayTitle(d)} passe à ${jour}.`);
+    } finally {
+      setEnvoi(false);
+    }
+  }, [deplacer, envoi, userId, apres]);
 
   /** Lot 5 · le bouton d'une proposition : il agit tout de suite, par
    *  l'écriture qui existe déjà pour ce geste. */
@@ -267,7 +291,7 @@ export default function FilPlanning({
      Une copie de la ligne suit le doigt ; le jour sous le doigt s'allume
      s'il peut la recevoir (aujourd'hui ou plus tard, pas un jour d'absence,
      pas un jour déjà fait). Rien ne s'écrit avant de lâcher. */
-  const [glisse, setGlisse] = useState<{ element: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>; date: string; y: number; dy: number; largeur: number; gauche: number; vers: string | null } | null>(null);
+  const [glisse, setGlisse] = useState<{ element: Glissable; date: string; y: number; dy: number; largeur: number; gauche: number; vers: string | null } | null>(null);
   const glisseRef = useRef(glisse);
   useEffect(() => { glisseRef.current = glisse; }, [glisse]);
 
@@ -278,7 +302,7 @@ export default function FilPlanning({
     return !l.elements.some((e) => e.genre === "fait" || e.genre === "realisee");
   }, [aujourdhui, lignes]);
 
-  const debutGlisse = (e: React.PointerEvent, element: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>, date: string) => {
+  const debutGlisse = (e: React.PointerEvent, element: Glissable, date: string) => {
     if (envoi) return;
     e.preventDefault();
     const ligne = (e.currentTarget as HTMLElement).closest("[data-seance]") as HTMLElement | null;
@@ -296,7 +320,7 @@ export default function FilPlanning({
   const finGlisse = () => {
     const g = glisseRef.current;
     setGlisse(null);
-    if (g?.vers) void deplacer({ element: g.element, date: g.date }, g.vers);
+    if (g?.vers) void bouger({ element: g.element, date: g.date }, g.vers);
   };
 
   const cycle = programme?.cycle ?? null;
@@ -340,7 +364,7 @@ export default function FilPlanning({
                   cible={glisse?.vers === l.date}
                   prise={glisse?.date === l.date ? glisse.element : null}
                   laFaireAujourdhui={l.aujourdhui && l.etat === "libre" && proposeeAilleurs && proposition?.genre !== "manquee"}
-                  deplacable={deplacable}
+                  deplacable={glissable}
                   onLancerTete={onLancerTete}
                   onPoignee={(e, el) => debutGlisse(e, el, l.date)}
                   onOuvrir={(element) => setCible({ ligne: l, element })} />
@@ -391,9 +415,11 @@ export default function FilPlanning({
             aujourdhui={aujourdhui}
             lignes={lignes.flat()}
             deplacable={deplacable}
+            glissable={glissable}
+            situations={situations}
             envoi={envoi}
             onClose={() => setCible(null)}
-            onDeplacer={(el, vers) => void deplacer({ element: el, date: cible.ligne.date }, vers)}
+            onDeplacer={(el, vers) => void bouger({ element: el, date: cible.ligne.date }, vers)}
             onLancerTete={() => { setCible(null); onLancerTete(); }}
             onLancerIntention={(d) => { setCible(null); onLancerIntention(d); }}
             onLancerCourt={(d, m) => { setCible(null); onLancerCourt(d, m); }}
@@ -429,7 +455,7 @@ function LigneJour({ ligne, cycle, situations, cible, prise, laFaireAujourdhui, 
   laFaireAujourdhui: boolean;
   deplacable: (el: ElementJour<EtapeCycle> | null) => boolean;
   onLancerTete: () => void;
-  onPoignee: (e: React.PointerEvent, el: Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>) => void;
+  onPoignee: (e: React.PointerEvent, el: Glissable) => void;
   onOuvrir: (element: ElementJour<EtapeCycle> | null) => void;
 }) {
   const l = ligne;
@@ -499,10 +525,10 @@ function LigneJour({ ligne, cycle, situations, cible, prise, laFaireAujourdhui, 
           const peutBouger = !l.passe && deplacable(el);
           return (
             <div key={n} data-seance style={{ opacity: prise === el ? 0.25 : 1 }}>
-              <ElementLigne element={el} cycle={cycle} situations={situations}
+              <ElementLigne element={el} cycle={cycle} situations={situations} date={l.date}
                 touchable={!l.passe && el.genre !== "fait" && el.genre !== "realisee"}
                 poignee={peutBouger}
-                onPoignee={peutBouger && el.genre === "prevu" ? (e) => onPoignee(e, el) : undefined}
+                onPoignee={peutBouger && (el.genre === "prevu" || el.genre === "pose") ? (e) => onPoignee(e, el) : undefined}
                 onOuvrir={() => onOuvrir(el)} />
             </div>
           );
@@ -512,8 +538,9 @@ function LigneJour({ ligne, cycle, situations, cible, prise, laFaireAujourdhui, 
   );
 }
 
-function ElementLigne({ element: el, cycle, situations = [], touchable = false, poignee, onPoignee, onOuvrir }: {
+function ElementLigne({ element: el, cycle, situations = [], date, touchable = false, poignee, onPoignee, onOuvrir }: {
   element: ElementJour<EtapeCycle>;
+  date?: string;
   cycle: EtapeCycle[] | null;
   situations?: Situation[];
   touchable?: boolean;
@@ -523,7 +550,7 @@ function ElementLigne({ element: el, cycle, situations = [], touchable = false, 
 }) {
   const d = descriptionElement(el, cycle);
   const art = resolveArt({ title: d.titre });
-  const note = d.fait ? null : noteSituation(situations, d.duree, el.genre === "prevu" && !el.intention);
+  const note = d.fait ? null : noteSituation(situations, d.duree, el.genre === "prevu" && !el.intention, date);
   /* ⚠️ Photos naturelles, toujours (verrou du 2026-07-13) : l'état se dit
      par le texte et le chrome, jamais par une photo atténuée. */
   return (
@@ -562,7 +589,7 @@ function ElementLigne({ element: el, cycle, situations = [], touchable = false, 
 
 /** Ce qu'une situation change sur cette séance, en une ligne. La plus
  *  utile d'abord : la durée, puis la gêne, l'énergie, le matériel. */
-function noteSituation(situations: Situation[], duree: number, seComposera: boolean): { genre: Situation["reglages"]["genre"]; texte: string } | null {
+function noteSituation(situations: Situation[], duree: number, seComposera: boolean, date?: string): { genre: Situation["reglages"]["genre"]; texte: string } | null {
   for (const s of situations) {
     const r = s.reglages;
     if (r.genre === "moins_de_temps" && duree > r.minutes) return { genre: r.genre, texte: `${r.minutes} min au lieu de ${duree}` };
@@ -571,6 +598,7 @@ function noteSituation(situations: Situation[], duree: number, seComposera: bool
     const r = s.reglages;
     if (r.genre === "gene") return { genre: r.genre, texte: "adaptée à ta gêne" };
     if (r.genre === "energie") return { genre: r.genre, texte: "une série de moins par exercice" };
+    if (r.genre === "evenement" && date && date < s.fin) return { genre: r.genre, texte: "la veille de ton événement : une série de moins" };
     if (r.genre === "materiel" && seComposera) return { genre: r.genre, texte: r.lieu === "halteres" ? "aux haltères" : "sans matériel" };
   }
   return null;

@@ -39,7 +39,11 @@ import { occurrenceSuivante, type EtatOccurrences } from "@/lib/occurrences";
 /** 1 = lundi … 7 = dimanche. */
 export type JourSemaine = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-export type ExceptionJour = { date: string; genre: "pas_de_seance" | "seance_en_plus" };
+export type ExceptionJour = {
+  date: string; genre: "pas_de_seance" | "seance_en_plus";
+  /** Déduite d'une situation (un événement, un autre sport…), jamais en base. */
+  parSituation?: boolean;
+};
 export type Absence = { id?: string; debut: string; fin: string };
 
 export type Calendrier = {

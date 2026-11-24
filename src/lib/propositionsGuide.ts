@@ -138,10 +138,14 @@ const finSituation: Regle = (f, g) => {
   const demain = decaler(f.aujourdhui, 1);
   for (const s of f.situations) {
     if (s.statut !== "active" || s.fin !== demain) continue;
+    /* Un événement ne se prolonge pas : il a lieu ce jour-là. */
+    if (s.reglages.genre === "evenement") continue;
+    /* Une séance plus légère un seul jour n'est pas une période. */
+    if (s.debut === s.fin) continue;
     const fin = decaler(s.fin, 7);
     /* La base refuse une situation de plus de 120 jours. */
     if (ecartJours(s.debut, fin) + 1 > JOURS_MAX) continue;
-    const cle = `proposition.fin.${s.reglages.genre}` as const;
+    const cle = `proposition.fin.${s.reglages.genre as Exclude<typeof s.reglages.genre, "evenement">}` as const;
     return {
       genre: "fin_situation", cle: `fin:${s.id}:${s.fin}`, date: s.fin,
       phrase: voix(g, cle),
@@ -252,6 +256,8 @@ const raccourcies: Regle = (f, g) => {
 const jours: Regle = (f, g) => {
   const cal = f.calendrier;
   if (!cal?.choisi || cal.jours.length === 0) return null;
+  /* Un sport ou des jours qui changent un moment expliquent déjà l'écart. */
+  if (f.situations.some((s) => s.reglages.genre === "autre_sport" || s.reglages.genre === "jours_moment")) return null;
   const debut = decaler(f.aujourdhui, -28);
   const faits = new Set(f.joursFaits.filter((d) => d >= debut && d < f.aujourdhui));
   const parJour = new Map<number, number>();

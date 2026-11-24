@@ -2507,7 +2507,8 @@ export default function ProgressionPage() {
      jamais une seconde (la base refuserait les jours partagés). */
   const ouvrirSituation = (genre: GenreSituation) => {
     setSheet(null);
-    setSituationOuverte({ genre, existante: deGenre(journee.situations ?? [], genre) });
+    /* Plusieurs événements peuvent se suivre : on en déclare un nouveau. */
+    setSituationOuverte({ genre, existante: genre === "evenement" ? null : deGenre(situationsVisibles(journee.situations ?? [], today), genre) });
   };
   const changerVue = useCallback((v: VueEntrainement) => {
     setVue(v);
@@ -3148,6 +3149,8 @@ export default function ProgressionPage() {
             aujourdhui={today}
             onClose={() => setSituationOuverte(null)}
             onFini={(m) => { setSituationOuverte(null); showToast(m); void loadWeek(); }}
+            joursChoisis={!!calendrier?.choisi}
+            onMesJours={() => { setSituationOuverte(null); setSheet("jours"); }}
             onAbsence={calendrier ? () => { setSituationOuverte(null); setSheet("absence"); } : undefined}
           />
         )}
@@ -3166,7 +3169,8 @@ export default function ProgressionPage() {
                 case "absence": if (calendrier) setSheet("absence"); else { setSheet(null); showToast("Choisis d’abord tes jours d’entraînement."); } break;
                 case "jours": if (calendrier) setSheet("jours"); else setSheet(null); break;
                 case "adaptation": setSheet("adaptation"); break;
-                case "moins_de_temps": case "gene": case "energie": case "materiel": ouvrirSituation(g.porte); break;
+                case "moins_de_temps": case "gene": case "energie": case "materiel":
+                case "evenement": case "autre_sport": case "jours_moment": ouvrirSituation(g.porte); break;
                 case "programme": setSheet(null); setVue("programme"); break;
               }
             }}

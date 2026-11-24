@@ -8647,5 +8647,81 @@ verdict(
     page.includes("<PropositionFinProgramme ") && page.includes(`setVueParcours({ genre: "fiche", id })`), "");
 }
 
+/* ══ Entraînement repensé · ce qui manquait aux lots 1 à 3 ══ */
+{
+  const lire = (rel: string) => readFileSync(rel, "utf8").replaceAll(String.fromCharCode(13), "");
+  const ST = await import("@/lib/situations");
+  const PB = await import("@/lib/projectionBase");
+  const PR = await import("@/lib/projection");
+  const OC = await import("@/lib/ordreCycle");
+  const BE = await import("@/lib/banqueEtapes");
+  type Sit = import("@/lib/situations").Situation;
+  const sit = (reglages: Sit["reglages"], debut: string, fin: string): Sit => ({ id: "s", debut, fin, statut: "active", motif: null, reglages });
+  /* Lundi 23 novembre 2026, jours choisis : lundi, mercredi, vendredi. */
+  const cal = { choisi: true, jours: [1, 3, 5], effetLe: null, exceptions: [], absences: [] };
+  const cycle = [{ id: "A", nom: "Push", position: 1 }, { id: "B", nom: "Pull", position: 2 }];
+  const jours = (situations: Sit[], calendrier: typeof cal | import("@/lib/projection").Calendrier = cal) => PR.projeterJours(PB.entreeResolution({
+    cycle, etat: { depart: 1, fermes: [], reserves: [] }, calendrier, adaptations: [], aujourdhui: "2026-11-23", nbJours: 14, occupes: [], situations,
+  })).map((j) => j.date.slice(8) + j.etape.nom);
+  verdict("Manques · sans situation, le planning suit ses jours", jours([]).join() === "23Push,25Pull,27Push,30Pull,02Push,04Pull", jours([]).join());
+  const ev = jours([sit({ genre: "evenement" }, "2026-11-24", "2026-11-25")]);
+  verdict("Manques · le jour d'un événement ne porte pas de séance, elle passe au suivant", ev.join() === "23Push,27Pull,30Push,02Pull,04Push", ev.join());
+  const sp = jours([sit({ genre: "autre_sport", jours: [3] }, "2026-11-23", "2026-11-29")]);
+  verdict("Manques · un autre sport retire son jour, puis il revient à la fin", sp.join() === "23Push,27Pull,30Push,02Pull,04Push", sp.join());
+  const jm = jours([sit({ genre: "jours_moment", jours: [2, 6] }, "2026-11-23", "2026-11-29")]);
+  verdict("Manques · des jours qui changent une semaine, puis les habituels", jm.join() === "24Push,28Pull,30Push,02Pull,04Push", jm.join());
+  const choisie = { ...cal, exceptions: [{ date: "2026-11-25", genre: "seance_en_plus" as const }] };
+  verdict("Manques · un jour choisi à la main l'emporte sur la situation",
+    jours([sit({ genre: "autre_sport", jours: [3] }, "2026-11-23", "2026-11-29")], choisie)[1] === "25Pull", "");
+  verdict("Manques · un sport fini hier : ses jours ne passent pas pour manqués",
+    PR.premierJourManque(ST.calendrierAvecSituations({ ...cal, jours: [3] }, [sit({ genre: "autre_sport", jours: [3] }, "2026-11-16", "2026-11-22")]), "2026-11-23", "2026-11-16") === null
+    && PR.premierJourManque({ ...cal, jours: [3] }, "2026-11-23", "2026-11-16") === "2026-11-18", "");
+  verdict("Manques · sans situation de ce genre, le calendrier est rendu tel quel", ST.calendrierAvecSituations(cal, [sit({ genre: "energie", mode: "leger" }, "2026-11-23", "2026-11-23")]) === cal, "");
+  const acces = { nom: (x: { n: string; s: number }) => x.n, series: (x: { n: string; s: number }) => x.s, avecSeries: (x: { n: string; s: number }, s: number) => ({ ...x, s }) };
+  const evt = [sit({ genre: "evenement" }, "2026-11-24", "2026-11-25")];
+  verdict("Manques · la veille d'un événement : une série de moins, pas le jour même",
+    ST.appliquerSituations([{ n: "Squat", s: 4 }], evt, "2026-11-24", null, acces).liste[0].s === 3
+    && ST.appliquerSituations([{ n: "Squat", s: 4 }], evt, "2026-11-25", null, acces).liste[0].s === 4, "");
+  verdict("Manques · la veille et l'énergie ne retirent qu'une série",
+    ST.appliquerSituations([{ n: "Squat", s: 4 }], [...evt, sit({ genre: "energie", mode: "leger" }, "2026-11-24", "2026-11-24")], "2026-11-24", null, acces).liste[0].s === 3, "");
+  verdict("Manques · les jours en toutes lettres", ST.lesJours([4, 2]) === "le mardi et le jeudi" && ST.lesJours([6]) === "le samedi", ST.lesJours([4, 2]));
+  verdict("Manques · une ligne sans jours ne devient pas une situation",
+    ST.situationDeLigne({ id: "x", genre: "autre_sport", debut: "2026-11-18", fin: "2026-11-20", statut: "active", motif: null, reglages: { jours: [9] } }) === null, "");
+
+  /* L'ordre des séances */
+  const ctx = { lieu: "salle" as const, orientation: "general" as const, niveau: null, version: BE.COMPOSITION_VERSION };
+  const li = (n: string) => BE.composerEtape(n, ctx);
+  const liste = [{ id: "B", nom: "Pull", lignes: li("Pull") }, { id: null, nom: "Full Body", lignes: li("Full Body") }, { id: "A", nom: "Push", lignes: li("Push") }];
+  const res = [
+    { id: "r1", date: "2026-11-26", titre: "Push", rang: 7, etapeId: "A" },
+    { id: "r2", date: "2026-11-27", titre: "Jambes", rang: 8, etapeId: "C" },
+    { id: "r3", date: null, titre: "Pull", rang: 9, etapeId: "B" },
+  ];
+  const d = OC.preparerOrdre({ activationId: "x", programme: { id: "p", nom: "Force", intention: "priorites:dos" }, liste, reservations: res, ctx, lieu: "salle", variete: "peu" });
+  verdict("Manques · la nouvelle version suit la liste, garde le nom et l'intention",
+    !!d && d.etapes.map((e) => e.nom).join() === "Pull,Full Body,Push" && d.etapes.map((e) => e.position).join() === "1,2,3" && d.nom === "Force" && d.intention === "priorites:dos", "");
+  verdict("Manques · une réservation garde sa séance, au rang de sa place", !!d && d.choix.r1.choix === "remplacer" && d.choix.r1.position === 3 && d.choix.r1.rang === 3 && d.choix.r1.titre === "Push", JSON.stringify(d?.choix.r1?.position));
+  verdict("Manques · une séance sortie ou sans date se retire, et c'est annoncé", !!d && d.choix.r2.choix === "retirer" && d.choix.r3.choix === "retirer"
+    && OC.reservationsPerdues(res, liste).map((r) => r.id).join() === "r2,r3", "");
+  verdict("Manques · chaque séance garde ses propres exercices", !!d && d.etapes[0].lignes.map((l) => l.exercice_cle).join() === li("Pull").map((l) => l.exercice_cle).join(), "");
+  verdict("Manques · sept séances ou une séance vide sont refusées",
+    OC.preparerOrdre({ activationId: "x", programme: { id: "p", nom: "F", intention: null }, liste: [{ id: null, nom: "Push", lignes: [] }], reservations: [], ctx, lieu: "salle", variete: "peu" }) === null, "");
+  verdict("Manques · on n'ajoute pas une séance déjà là", !OC.seancesAjoutables("salle", ["Push"]).includes("Push") && OC.seancesAjoutables("salle", ["Push"]).includes("Pull"), "");
+  const rg = OC.reporterGene({ genre: "gene", zones: ["Genou gauche"], mode: "eviter", pauses: { A: true, C: true }, choix: { "A/Squat barre": "leger" } }, new Map([["A", "A2"]]));
+  verdict("Manques · une gêne suit les nouvelles étapes", rg.pauses?.A2 === true && Object.keys(rg.pauses ?? {}).length === 1 && rg.choix?.["A2/Squat barre"] === "leger", JSON.stringify(rg));
+
+  const gestes = lire("src/lib/semaineGestes.ts"), posee = lire("src/lib/seancePosee.ts");
+  const jour = lire("src/components/planning/FeuilleJour.tsx"), editeur = lire("src/components/programme/FeuilleSeanceProgramme.tsx");
+  verdict("Manques · « Seulement ce jour-là » ne touche jamais le modèle du programme",
+    !jour.includes("modifierSeance(") && editeur.includes("if (ceJour) {") && editeur.indexOf("if (ceJour) {") < editeur.indexOf("await modifierSeance("), "");
+  verdict("Manques · une réservation se réécrit en une transaction, une version réduite le dit",
+    gestes.includes('rpc("modifier_occurrence"') && gestes.includes("reduite: true, series_completes: a.series"), "");
+  verdict("Manques · une séance posée se relit avant de bouger, jamais une réservation",
+    posee.includes("d.date !== de") && posee.includes("|| d.etapeId"), "");
+  verdict("Manques · un jour pris par une situation se remet par un choix écrit", jour.includes('ligne.parSituation ? "seance_en_plus" : null'), "");
+  verdict("Manques · sans jours choisis, un sport demande d'abord les jours", lire("src/components/situations/FeuilleSituation.tsx").includes("JOURS_GENRE(genre) && !joursChoisis"), "");
+  verdict("Manques · le rappel du soir relit aussi les situations finies depuis peu", lire("src/app/api/cron/reminders/route.ts").includes('.gte("fin", decaler(today, -8))'), "");
+}
+
 console.log("\n" + (echecs === 0 ? "Tout passe." : echecs + " échec(s)."));
 process.exit(echecs === 0 ? 0 : 1);

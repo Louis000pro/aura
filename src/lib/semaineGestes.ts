@@ -28,7 +28,8 @@ import {
 } from "@/lib/planning";
 import { appliquerCibles } from "@/lib/progression";
 import { ciblesOuvertes } from "@/lib/progressionBase";
-import { ecrireOccurrence, modeleDeLEtape, modeleDeLOccurrence } from "@/lib/prescription";
+import type { LignePrescription } from "@/lib/banqueEtapes";
+import { COLS_LIGNE, ecrireOccurrence, modeleDeLEtape, modeleDeLOccurrence, versLigne } from "@/lib/prescription";
 import { lireVariete } from "@/lib/varieteBase";
 import { lireProgrammeActif, sauterEtape } from "@/lib/programme";
 import { viserEtape } from "@/lib/etapeCiblee";
@@ -74,6 +75,9 @@ export async function changerDeJour(input: {
   vers: string;
   aujourdhui: string;
   gen: GenInput;
+  /** « Seulement ce jour-là » : les exercices choisis pour CETTE occurrence,
+   *  à la place de ceux du modèle. Seulement pour une séance pas encore réservée. */
+  lignes?: LignePrescription[];
 }): Promise<ResultatGeste> {
   const { userId, cible, vers, gen } = input;
   try {
@@ -122,7 +126,7 @@ export async function changerDeJour(input: {
       adaptation_id: aLArrivee?.id ?? null,
       consommee_le: null,
       lancement_id: null,
-    }, modele.modeleId, appliquerCibles(modele.lignes, cibles, cible.rang));
+    }, modele.modeleId, appliquerCibles(input.lignes ?? modele.lignes, cibles, cible.rang));
     /* `deja` : quelqu'un l'a réservée entre-temps. On ne la déplace pas
        à l'aveugle : l'écran se relit et la montre où elle est. */
     if (r.resultat === "deja") return { ok: false, raison: "changee" };
@@ -132,6 +136,72 @@ export async function changerDeJour(input: {
   } catch (e) {
     console.error("[semaine] changer de jour :", e);
     return { ok: false, raison: "echec" };
+  }
+}
+
+/**
+ * Les exercices de la séance montrée ce jour-là, pour les changer. Une
+ * réservation a les siens, figés ; une prévision a ceux de SON occurrence.
+ * `null` = illisible ou sans prescription : on ne compose pas à sa place.
+ */
+export async function lignesDuJour(input: {
+  userId: string; cible: CibleAffichee; etape: { id: string; nom: string }; gen: GenInput; longueurCycle: number;
+}): Promise<LignePrescription[] | null> {
+  const { userId, cible, etape, gen } = input;
+  try {
+    if (cible.reservationId) {
+      const { data, error } = await createClient()
+        .from("occurrence_exercices").select(COLS_LIGNE)
+        .eq("intention_id", cible.reservationId).order("emplacement", { ascending: true });
+      if (error || !data || data.length === 0) return null;
+      return (data as unknown as Record<string, unknown>[]).map(versLigne);
+    }
+    const ctx = contexteDe(gen);
+    const [m, variete] = await Promise.all([modeleDeLEtape(etape, ctx), lireVariete(userId)]);
+    if (!m || !variete) return null;
+    return modeleDeLOccurrence(m, { id: etape.id, rang: cible.rang }, ctx, variete, input.longueurCycle).lignes;
+  } catch (e) {
+    console.error("[semaine] exercices du jour :", e);
+    return null;
+  }
+}
+
+/**
+ * « Seulement ce jour-là » : d'autres exercices pour cette occurrence, sans
+ * toucher au programme. Une prévision se réserve à son jour avec eux ; une
+ * réservation est réécrite par la base, en une transaction.
+ *
+ * ⚠️ Une ligne qui perd des séries le dit (`reduite`) : la fin de séance ne
+ * proposera pas de monter sur une version réduite.
+ */
+export async function modifierCeJour(input: {
+  userId: string;
+  cible: CibleAffichee;
+  avant: readonly LignePrescription[];
+  lignes: readonly LignePrescription[];
+  aujourdhui: string;
+  gen: GenInput;
+}): Promise<ResultatGeste> {
+  const { userId, cible, aujourdhui, gen } = input;
+  const lignes = input.lignes.map((l, i) => {
+    const a = input.avant.find((x) => x.exercice_cle === l.exercice_cle);
+    return { ...l, emplacement: i, ...(a && l.series < a.series ? { reduite: true, series_completes: a.series } : {}) };
+  });
+  if (!cible.reservationId) return changerDeJour({ userId, cible, vers: cible.date, aujourdhui, gen, lignes });
+  try {
+    /* La charge acceptée pour cette occurrence suit l'exercice gardé. */
+    const cibles = (await ciblesOuvertes(userId, cible.programmeId, cible.etapeId)) ?? [];
+    const { data, error } = await createClient().rpc("modifier_occurrence", {
+      p: {
+        id: cible.reservationId, date: cible.date, programme_id: cible.programmeId,
+        etape_id: cible.etapeId, rang: cible.rang, lignes: appliquerCibles(lignes, cibles, cible.rang),
+      },
+    });
+    if (error) { console.error("[semaine] modifier ce jour :", error.message); return { ok: false, raison: "echec" }; }
+    return (data as { resultat?: string } | null)?.resultat === "ok" ? { ok: true } : { ok: false, raison: "changee" };
+  } catch (e) {
+    console.error("[semaine] modifier ce jour :", e);
+    return { ok: false, raison: "partiel" };
   }
 }
 

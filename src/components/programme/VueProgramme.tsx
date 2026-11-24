@@ -24,6 +24,7 @@ import { AnimatePresence } from "framer-motion";
 import { ChevronRight, Pencil, Repeat } from "lucide-react";
 import { Photo } from "@/components/entrainement/PhotoSeance";
 import FeuilleSeanceProgramme from "@/components/programme/FeuilleSeanceProgramme";
+import FeuilleOrdre from "@/components/programme/FeuilleOrdre";
 import { resolveArt } from "@/lib/workoutArt";
 import { composerEtape, projeterPrescription, type LignePrescription } from "@/lib/banqueEtapes";
 import { contexteDe, persistLieu, type GenInput } from "@/lib/planning";
@@ -75,6 +76,7 @@ export default function VueProgramme({
   const [edition, setEdition] = useState<EtapeCycle | null>(null);
   const [modeles, setModeles] = useState<{ cle: string; lignes: Record<string, LignePrescription[]> } | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [ordre, setOrdre] = useState(false);
   const [toutesVersions, setToutesVersions] = useState(false);
 
   const ctx = useMemo(() => (gen ? contexteDe(gen) : null), [gen]);
@@ -292,6 +294,12 @@ export default function VueProgramme({
           <div className="flex items-center gap-2 mt-2.5 text-[13px]" style={{ color: "var(--text-3)" }}>
             <Repeat size={14} /> Et ça recommence.
           </div>
+          {gen && (
+            <button type="button" onClick={() => setOrdre(true)}
+              className="mt-2.5 text-[13px] font-semibold bg-transparent border-none p-0 cursor-pointer min-h-[32px]" style={{ color: "var(--exp-encre)" }}>
+              Changer l’ordre, ajouter ou retirer une séance
+            </button>
+          )}
 
           {/* Les règles */}
           {reglages && (
@@ -343,6 +351,17 @@ export default function VueProgramme({
           </button>
         </section>
       )}
+
+      <AnimatePresence>
+        {ordre && programme && gen && (
+          <FeuilleOrdre
+            userId={userId}
+            programme={{ id: programme.programme.id, nom: programme.programme.nom, intention: programme.programme.intention ?? null }}
+            pile={pile} gen={gen} aujourdhui={aujourdhui}
+            onClose={() => setOrdre(false)}
+            onFini={(m) => { setOrdre(false); onToast(m); relire(); }} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {edition && ctx && (

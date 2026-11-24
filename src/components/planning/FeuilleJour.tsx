@@ -15,7 +15,11 @@
    n'a pas encore de durée à elle en base : régler la durée sert à la
    lancer maintenant, raccourcie (la même règle que « Version courte »).
    Le réglage n'apparaît donc que quand la séance peut se faire maintenant.
-   L'effort (« plus léger ») arrive avec les situations du lot 2.
+   L'effort (« plus léger »), lui, s'enregistre pour ce jour : c'est une
+   situation « moins d'énergie » d'une seule journée.
+
+   ⚠️ « CHANGER LES EXERCICES » ICI NE VAUT QUE CE JOUR-LÀ. Les changer pour
+   toujours se fait dans la vue Programme.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useMemo, useState } from "react";
@@ -35,19 +39,27 @@ import type { EtapeCycle, ProgrammeEtCycle } from "@/lib/programme";
 import type { JourProjete } from "@/lib/projection";
 import { decaler, jourDeSemaine } from "@/lib/projection";
 import { ABR_JOURS, type ElementJour, type LigneSemaine } from "@/lib/semaine";
-import { passerLaSeance, regleDuJour, retirerLeJour, type ResultatGeste } from "@/lib/semaineGestes";
+import FeuilleSeanceProgramme from "@/components/programme/FeuilleSeanceProgramme";
+import type { ContexteComposition, LignePrescription } from "@/lib/banqueEtapes";
+import {
+  lignesDuJour, modifierCeJour, passerLaSeance, regleDuJour, retirerLeJour,
+  type CibleAffichee, type ResultatGeste,
+} from "@/lib/semaineGestes";
+import { dateCourte, deGenre, situationsDuJour, type Situation } from "@/lib/situations";
+import { arreterSituation, creerSituation } from "@/lib/situationsBase";
 import { CONFLITS, descriptionElement, type ALiberer } from "@/components/planning/ligneSeance";
 
 /** Ce qu'on a touché pour ouvrir la feuille d'un jour. */
 export type Cible = { ligne: LigneSemaine<EtapeCycle>; element: ElementJour<EtapeCycle> | null };
 
 type Prevu = Extract<ElementJour<EtapeCycle>, { genre: "prevu" }>;
+type Pose = Extract<ElementJour<EtapeCycle>, { genre: "pose" }>;
 
 const DUREE_MIN = 10;
 const DUREE_PAS = 5;
 
 export default function FeuilleJour({
-  cible, userId, programme, gen, aujourdhui, lignes, deplacable, envoi,
+  cible, userId, programme, gen, aujourdhui, lignes, deplacable, glissable, situations, envoi,
   onClose, onDeplacer, onLancerTete, onLancerIntention, onLancerCourt, onChoisirSeance, onDemander, onResultat,
 }: {
   cible: Cible;
@@ -58,10 +70,13 @@ export default function FeuilleJour({
   /** Les jours du fil : pour dire quels jours sont déjà pris. */
   lignes: LigneSemaine<EtapeCycle>[];
   deplacable: (el: ElementJour<EtapeCycle> | null) => el is Prevu;
+  /** Comme `deplacable`, plus les séances posées à côté du programme. */
+  glissable: (el: ElementJour<EtapeCycle> | null) => el is Prevu | Pose;
+  situations: Situation[] | null;
   /** Un geste est en cours ailleurs dans le fil. */
   envoi: boolean;
   onClose: () => void;
-  onDeplacer: (el: Prevu, vers: string) => void;
+  onDeplacer: (el: Prevu | Pose, vers: string) => void;
   onLancerTete: () => void;
   onLancerIntention: (d: PlanningDay) => void;
   onLancerCourt: (d: PlanningDay | null, minutes: number) => void;
@@ -88,7 +103,34 @@ export default function FeuilleJour({
      séance posée. Une réservation en conflit ne se lance qu'en le disant. */
   const faisableBrut = !!((p && element?.genre === "prevu" && (element.proposee || reservation)) || pose);
   const faisable = faisableBrut && !p?.conflit;
-  const peutChanger = deplacable(element);
+  const peutChanger = glissable(element);
+  /* Changer les exercices de ce jour : la séance du programme qu'on peut
+     réserver, ou sa réservation. */
+  const modifiable = deplacable(element) && !!gen && !!programme;
+  const [edition, setEdition] = useState<{ cible: CibleAffichee; ctx: ContexteComposition; lignes: LignePrescription[] } | null>(null);
+  const [souci, setSouci] = useState<string | null>(null);
+  /* L'effort de ce jour : une situation « moins d'énergie », d'un jour ou plus. */
+  const energie = deGenre(situationsDuJour(situations ?? [], ligne.date), "energie");
+  const energieLongue = !!energie && energie.debut !== energie.fin;
+  const effortReglable = !ligne.passe && !!(p || pose) && situations !== null;
+  const changerEffort = async (leger: boolean) => {
+    if (bloque || leger === !!energie || energieLongue) return;
+    setOccupe(true);
+    const ok = leger
+      ? (await creerSituation(userId, { debut: ligne.date, fin: ligne.date, reglages: { genre: "energie", mode: "leger" } })).ok
+      : await arreterSituation(userId, energie!, aujourdhui);
+    onResultat(ok ? { ok: true } : { ok: false, raison: "echec" }, leger ? "Une série de moins par exercice ce jour-là." : "Effort comme prévu ce jour-là.");
+  };
+  const ouvrirEdition = async () => {
+    if (!p || !gen || !programme || bloque) return;
+    setOccupe(true); setSouci(null);
+    const c: CibleAffichee = { programmeId: programme.programme.id, etapeId: p.etape.id, rang: p.rang, date: ligne.date, reservationId: reservation?.id ?? null };
+    const l = await lignesDuJour({ userId, cible: c, etape: { id: p.etape.id, nom: p.etape.nom }, gen, longueurCycle: programme.cycle.length });
+    setOccupe(false);
+    if (!l) { setSouci("Je n’arrive pas à lire les exercices de cette séance."); return; }
+    const base = contexteDe(gen);
+    setEdition({ cible: c, lignes: l, ctx: reservation?.location ? { ...base, lieu: reservation.location } : base });
+  };
   /* Seule la PROCHAINE séance se passe (V9C) : c'est celle que l'app propose. */
   const passable = !!p && element?.genre === "prevu" && element.proposee && !p.conflit;
   const suivante = useMemo(() => {
@@ -144,6 +186,24 @@ export default function FeuilleJour({
 
   const retour = vue !== "jour" ? () => setVue("jour") : null;
   const art = resolveArt({ title: titre });
+
+  if (edition && p && gen && programme) {
+    return (
+      <FeuilleSeanceProgramme
+        etape={p.etape} ctx={edition.ctx} lignes={edition.lignes} tousLes={programme.cycle.length}
+        ceJour={{
+          quand: jourLong,
+          enregistrer: async (l) => {
+            const r = await modifierCeJour({ userId, cible: edition.cible, avant: edition.lignes, lignes: l, aujourdhui, gen });
+            if (!r.ok && r.raison === "echec") return "Ça n’a pas été enregistré. Réessaie dans un instant.";
+            onResultat(r, `${titre} est changée pour ce jour-là.`);
+            return null;
+          },
+        }}
+        onClose={() => setEdition(null)}
+        onEnregistre={() => setEdition(null)} />
+    );
+  }
 
   return (
     <FeuilleBas onClose={onClose} niveau={106}>
@@ -203,7 +263,7 @@ export default function FeuilleJour({
             )}
 
             {/* Le jour : sept puces. Un jour pris échange sa séance. */}
-            {peutChanger && element?.genre === "prevu" && (
+            {peutChanger && (
               <Reglage nom="Jour">
                 <div className="flex justify-between gap-1">
                   {sept.map((date) => {
@@ -227,7 +287,7 @@ export default function FeuilleJour({
                     );
                   })}
                 </div>
-                <p className="text-[13px] mt-1.5" style={{ color: "var(--text-3)" }}>Un jour déjà pris : les deux séances échangent leur place.</p>
+                <p className="text-[13px] mt-1.5" style={{ color: "var(--text-3)" }}>{element?.genre === "prevu" ? "Un jour déjà pris : les deux séances échangent leur place." : "Un jour déjà pris : elle s’y ajoute."}</p>
               </Reglage>
             )}
 
@@ -246,13 +306,36 @@ export default function FeuilleJour({
               </Reglage>
             )}
 
+            {effortReglable && (
+              <Reglage nom="Effort">
+                <div role="radiogroup" className="flex gap-1 p-[3px] rounded-[13px]" style={{ background: "rgba(var(--text-3-rgb),0.16)" }}>
+                  {[{ l: "Comme prévu", v: false }, { l: "Plus léger", v: true }].map((o) => {
+                    const actif = o.v === !!energie;
+                    return (
+                      <button key={o.l} type="button" role="radio" aria-checked={actif} disabled={bloque || energieLongue} onClick={() => void changerEffort(o.v)}
+                        className="flex-1 py-2 px-1.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer"
+                        style={{ background: actif ? "rgb(var(--surface-rgb))" : "transparent", color: actif ? "var(--text-0)" : "var(--text-2)" }}>
+                        {o.l}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>
+                  {energieLongue ? `Déjà plus léger jusqu’au ${dateCourte(energie!.fin)} : change-le dans « En ce moment ».`
+                    : energie ? "Une série de moins par exercice, si tu la fais ce jour-là." : "Plus léger : une série de moins par exercice ce jour-là."}
+                </p>
+              </Reglage>
+            )}
+
+            {souci && <p role="alert" className="text-[13px] mt-2" style={{ color: "var(--feu-encre)" }}>{souci}</p>}
             <div className="mt-2">
+              {modifiable && <Porte label="Changer les exercices" sous="Seulement ce jour-là" disabled={bloque} onClick={() => void ouvrirEdition()} />}
               {(p || pose) && <Porte label="Voir les exercices" onClick={() => void voirExos()} />}
               {p && <Porte label="Échanger contre une autre séance" sous="Du catalogue ou une des tiennes" onClick={() => setVue("autre")} />}
               {passable && <Porte label="Passer cette séance" sous={suivante ? `Elle ne sera pas faite, ${suivante} prend sa place.` : "Elle ne sera pas faite."} onClick={() => setVue("passer")} />}
               {p && (
                 <Porte label="Pas d’entraînement ce jour-là" sous="La séance passe au jour suivant." disabled={bloque}
-                  onClick={() => void geste(() => retirerLeJour(userId, ligne.date, reservation?.id ?? null, ligne.enPlus ? "seance_en_plus" : null), "Jour retiré, la séance passe au suivant.")} />
+                  onClick={() => void geste(() => retirerLeJour(userId, ligne.date, reservation?.id ?? null, ligne.enPlus && !ligne.parSituation ? "seance_en_plus" : null), "Jour retiré, la séance passe au suivant.")} />
               )}
               {p?.conflit && faisableBrut && (
                 <Porte label="La faire quand même" sous={CONFLITS[p.conflit]} disabled={bloque}
@@ -262,14 +345,17 @@ export default function FeuilleJour({
                 <Porte label="Choisir une séance" sous="Du catalogue ou une des tiennes" disabled={bloque} onClick={() => onChoisirSeance(ligne.date, null)} />
               )}
               {ligne.etat === "pas_de_seance" && (
-                <Porte label="Remettre ce jour" disabled={bloque} onClick={() => void geste(() => regleDuJour(userId, ligne.date, null), "Jour remis.")} />
+                /* Retiré par un sport ou un événement : le remettre est un choix
+                   écrit, qui l'emporte sur la situation. */
+                <Porte label="Remettre ce jour" sous={ligne.parSituation ? "Il est pris par ce que tu as noté dans « En ce moment »." : undefined} disabled={bloque}
+                  onClick={() => void geste(() => regleDuJour(userId, ligne.date, ligne.parSituation ? "seance_en_plus" : null), "Jour remis.")} />
               )}
               {ligne.etat === "libre" && !ligne.entrainement && (
                 <Porte label="M’entraîner ce jour-là" sous="Seulement cette semaine" disabled={bloque}
                   onClick={() => void geste(() => regleDuJour(userId, ligne.date, "seance_en_plus"), "Jour ajouté.")} />
               )}
               {ligne.enPlus && !p && (
-                <Porte label="Retirer ce jour en plus" disabled={bloque} onClick={() => void geste(() => regleDuJour(userId, ligne.date, null), "Jour retiré.")} />
+                <Porte label="Retirer ce jour en plus" disabled={bloque} onClick={() => void geste(() => (ligne.parSituation ? retirerLeJour(userId, ligne.date, null) : regleDuJour(userId, ligne.date, null)), "Jour retiré.")} />
               )}
             </div>
 

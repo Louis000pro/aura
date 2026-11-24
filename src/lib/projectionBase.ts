@@ -12,7 +12,7 @@
    faire annoncer une séance qu'une adaptation masque.
    ════════════════════════════════════════════════════════════════════ */
 
-import { etapesEnPause, type Situation } from "@/lib/situations";
+import { calendrierAvecSituations, etapesEnPause, type Situation } from "@/lib/situations";
 import { lireSituations } from "@/lib/situationsBase";
 import { lireOccurrences, type EtapeCycle, type ProgrammeEtCycle } from "@/lib/programme";
 import { lireAdaptations, adaptationActive, etapeMasquee, type Adaptation } from "@/lib/adaptation";
@@ -55,7 +55,9 @@ export function entreeResolution<T extends { id: string; position: number }>(f: 
     cycle: f.cycle,
     etat: f.etat,
     reservations: f.etat.reserves.map((r) => ({ rang: r.rang, etapeId: r.etapeId, date: r.date ?? null })),
-    calendrier: f.calendrier,
+    /* Un événement, un autre sport, des jours qui changent : des jours
+       retirés ou en plus, vus par le calendrier, jamais écrits. */
+    calendrier: f.situations ? calendrierAvecSituations(f.calendrier, f.situations) : f.calendrier,
     dates: Array.from({ length: f.nbJours }, (_, i) => decaler(f.aujourdhui, i)),
     aujourdhui: f.aujourdhui,
     faitAujourdhui: dernierJourFait === f.aujourdhui,
@@ -108,7 +110,7 @@ export async function resolutionDuProgramme(
     const resolution = resoudreJournee(entreeResolution({
       cycle: actif.cycle, etat, calendrier, adaptations, aujourdhui, nbJours, occupes, situations,
     }));
-    return { ...vide, resolution, etat };
+    return { ...vide, calendrier: calendrierAvecSituations(calendrier, situations), resolution, etat };
   } catch (e) {
     console.warn("[projection] résolution indisponible :", (e as Error)?.message);
     return null;
