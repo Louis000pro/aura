@@ -66,16 +66,18 @@ ni réserve, ni statistique, ni chances cumulées. La page de fin simule
 l'EXP et « Nouvelle » ; l'accueil n'est pas prévenu. ⚠️ Différent du compte
 d'essai illimité (`/api/boosters/essai`), qui, lui, enregistre.
 
-## Les bruitages du booster, et plus de compteur — 2026-11-24
+## Le booster sans compteur, et les sons à refaire — 2026-11-24
 
-Louis : retirer la barre « Carte 1 sur 3 » (elle portait la couleur de la
-meilleure carte, donc elle la trahissait) ; un son « premium », un bruitage,
-« pas des sons à chaque action », ni jeu ni cinématique. Le titre n'existe
-plus qu'à la page de fin. `lib/sonsBooster.ts` : trois moments seulement, le
-film qui se déchire sous le doigt, les cartes qui sortent, la dernière carte
-qui se retourne ; même son pour toutes les raretés, aucune mélodie,
-coupé par l'interrupteur « Sons ». Niveaux mesurés hors ligne, jamais écoutés :
-à régler à l'oreille avec Louis.
+Louis : la barre « Carte 1 sur 3 » est retirée (elle portait la couleur de la
+meilleure carte, donc la trahissait) ; le titre n'existe qu'à la page de fin.
+Les premiers bruitages, synthétisés (déchirure, sortie, dernière carte), sont
+**refusés et retirés** : « une feuille qui se déchire comme un gros livre ».
+Louis s'en occupe. Ce qui est voulu : un son fin, premium, peu nombreux (pas à
+chaque action, pas de cinématique), une ouverture dans l'esprit de Pokémon TCG
+Pocket, et surtout **un petit son tranquille quand l'EXP monte à la fin**. Ne
+pas resynthétiser du bruit filtré : partir de vrais sons (banque de sons).
+⚠️ Les chances qui montent après plusieurs rares sont abandonnées (Louis) : ne
+pas les réparer dans `ouvrir_booster_exercices_v5`.
 
 ## On choisit sa vitrine de cartes d'exercices — 2026-11-19
 
