@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Carte } from "@/lib/cartesBooster";
+import { sonDerniereCarte, sonSortieCartes } from "@/lib/sonsBooster";
 import styles from "./OuvertureCartes.module.css";
 
 type Rarete = Carte["rarete"];
@@ -166,6 +167,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
     async function sortie() {
       els.forEach((e, i) => { poser(i, P.dedans()); e.style.zIndex = String(3 - i); e.dataset.on = ""; });
       vibrer([14, 40, 22]);
+      sonSortieCartes();
       await attendre(110); if (!vivant) return;
       [2, 1, 0].forEach((i, k) => aller(i, P.sorti(i), { d: 540, e: "cubic-bezier(.16,.9,.3,1)", delay: k * 50 }));
       await attendre(580); if (!vivant) return;
@@ -204,7 +206,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
 
     async function reveler(i: number) {
       const carte = cartes[i], o = RAR[carte.rarete], grande = i === 2;
-      definir("flip"); setTitre("Carte " + (i + 1) + " sur 3"); setAide("");
+      definir("flip"); setAide("");
       const img = els[i].querySelector("img");
       try { await img?.decode(); } catch { /* l'image s'affichera dès qu'elle arrive */ }
       if (!vivant) return;
@@ -212,6 +214,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
       else await attendre(i === 0 ? 120 : 40);
       if (!vivant) return;
       const d = grande ? o.flip : 540, de = 180 + (grande ? o.tours * 360 : 0);
+      if (grande) sonDerniereCarte(reduit ? 120 : d);
       fixe(morceau(i, styles.int), [{ transform: "rotateY(" + de + "deg)" }, { transform: "rotateY(-7deg)", offset: .74 }, { transform: "rotateY(0deg)" }],
         { duration: d, easing: "cubic-bezier(.3,.6,.25,1)" });
       joue(morceau(i, styles.tilt), [{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(0," + (-H * .02) + "px,0) scale(" + (grande ? 1.08 : 1.04) + ")", offset: .5 }, { transform: "translate3d(0,0,0) scale(1)" }],
@@ -423,7 +426,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
         </div>
       ))}
       <div className={styles.ui}>
-        <h2 ref={titreEl} className={styles.titre} data-fin={meilleure} aria-live="polite">{titre}</h2>
+        <h2 ref={titreEl} className={styles.titre} data-fin={titre ? meilleure : undefined} aria-live="polite">{titre}</h2>
         {titreFin !== "Booster ouvert" && <p className={styles.sousTitre}>Booster ouvert</p>}
         <button type="button" className={styles.fermer} aria-label="Fermer" onClick={onFermer}>×</button>
         <p className={styles.aide}>{aide}</p>

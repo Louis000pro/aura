@@ -56,6 +56,17 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Les bruitages du booster, et plus de compteur — 2026-11-24
+
+Louis : retirer la barre « Carte 1 sur 3 » (elle portait la couleur de la
+meilleure carte, donc elle la trahissait) ; un son « premium », un bruitage,
+« pas des sons à chaque action », ni jeu ni cinématique. Le titre n'existe
+plus qu'à la page de fin. `lib/sonsBooster.ts` : trois moments seulement, le
+film qui se déchire sous le doigt, les cartes qui sortent, la dernière carte
+qui se retourne ; même son pour toutes les raretés, aucune mélodie,
+coupé par l'interrupteur « Sons ». Niveaux mesurés hors ligne, jamais écoutés :
+à régler à l'oreille avec Louis.
+
 ## On choisit sa vitrine de cartes d'exercices — 2026-11-19
 
 Louis : « ma vitrine n'est pas changeable pour les cartes ». « Changer » à côté
