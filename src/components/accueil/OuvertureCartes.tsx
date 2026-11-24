@@ -10,7 +10,7 @@
 // Tout bouge en transform et en opacité, par Web Animations : rien ne se repeint pendant l'ouverture.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { Carte } from "@/lib/cartesBooster";
+import { EXP_CARTE as EXP, type Carte } from "@/lib/cartesBooster";
 import { sonDerniereCarte, sonSortieCartes } from "@/lib/sonsBooster";
 import styles from "./OuvertureCartes.module.css";
 
@@ -18,7 +18,6 @@ type Rarete = Carte["rarete"];
 type Pose = { x: number; y: number; s: number; r: number };
 type Etat = "sortie" | "flip" | "carte" | "range" | "recapAnim" | "recap" | "zoom";
 
-const EXP: Record<Rarete, number> = { commune: 5, rare: 8, epique: 10, legendaire: 20, chromatique: 30 };
 // lueur : durée de la grosse lueur de la dernière carte, taille : son ampleur, tremble : force du tremblement.
 const RAR: Record<Rarete, { nuit: number; attente: number; tours: number; flip: number; vibre: number[]; lueur: number; taille: number; tremble: number }> = {
   commune: { nuit: 0, attente: 260, tours: 0, flip: 560, vibre: [10], lueur: 900, taille: .9, tremble: .1 },

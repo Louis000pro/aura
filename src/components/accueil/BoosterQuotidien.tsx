@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { MotionConfig, useReducedMotion } from "framer-motion";
 import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { useGuideActif } from "@/context/GuideContext";
 import { shiftDateStr } from "@/lib/dates";
 import type { GuideId } from "@/lib/guides";
 import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
+import { expDesCartes } from "@/lib/cartesBooster";
 import OuvertureCartes from "./OuvertureCartes";
 import { InfosFin, ActionsFin } from "./FinBooster";
 import { libererCelebration, retenirCelebration } from "@/lib/celebrationRang";
@@ -28,6 +30,16 @@ async function demanderEssai(methode: "GET" | "POST", signal?: AbortSignal, requ
   });
   if (!response.ok) return null;
   return await response.json() as { illimite?: boolean; cartes?: Carte[]; exp?: number };
+}
+
+// Une ouverture à blanc (administrateurs) : le vrai tirage, que la base n'enregistre pas.
+async function tirerABlanc() {
+  const { data: { session } } = await createClient().auth.getSession();
+  if (!session) return null;
+  const response = await fetch("/api/admin/booster-blanc", {
+    method: "POST", headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store",
+  });
+  return response.ok ? (await response.json() as { cartes?: Carte[] }).cartes ?? null : null;
 }
 
 async function lireBooster(requete?: string, signal?: AbortSignal) {
@@ -325,6 +337,9 @@ export function CollectionBoostersProfil({ userId, pseudo }: { userId: string; p
 export default function BoosterQuotidien({ userId, jour, onGain }: { userId: string; jour: string; onGain?: () => void }) {
   const { profil: portrait, verifier: verifierCoach } = useGuideCartes(userId);
   const coach = portrait?.choix ?? null;
+  const { user } = useAuth();
+  // Ouverture à blanc : tout se joue, rien ne s’écrit (ni carte, ni EXP, ni réserve).
+  const [blanc, setBlanc] = useState(false);
   const [statut, setStatut] = useState<"chargement" | "pret" | "erreur">("chargement");
   const [revisionStatut, setRevisionStatut] = useState(0);
   const [illimite, setIllimite] = useState(false);
@@ -450,7 +465,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setEssaiSachet(essai => essai + 1);
   }
 
-  async function preparerSachet() {
+  async function preparerSachet(aBlanc = false) {
     if (preparation) return;
     setPreparation(true);
     setErreurCoach("");
@@ -465,6 +480,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
       lireCollectionAvant();
       reinitialiserScene();
       setGuideSachet(guideConfirme);
+      setBlanc(aBlanc);
+      setEssaiSachet(essai => essai + 1);
       if (dialog.current && !dialog.current.open) {
         sceneEnCours.current = true;
         // L'écran derrière la scène n'est plus peint (voir `.dialog` dans le CSS).
@@ -485,7 +502,12 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
     setErreur("");
     setChargement(true);
     try {
-      let tirage = tirageEnAttente.current;
+      let tirage = blanc ? null : tirageEnAttente.current;
+      if (blanc) {
+        const tirees = await tirerABlanc();
+        if (tirees?.length !== 3) throw new Error("Tirage indisponible");
+        tirage = { cartes: tirees, exp: expDesCartes(tirees) };
+      }
       if (!tirage) {
         let nouvellesCartes: unknown;
         let gain = 0;
@@ -531,8 +553,8 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         tirageEnAttente.current = tirage;
       }
       imagesDecodees.current = await Promise.all(tirage.cartes.map(carte => decoderCarte(carte, guideSachet)));
-      tirageEnAttente.current = null;
-      requeteOuverture.current = null;
+      // Un vrai booster resté en attente d’image n’est pas oublié par un essai à blanc.
+      if (!blanc) { tirageEnAttente.current = null; requeteOuverture.current = null; }
       const avant = await Promise.race([
         collectionAvant.current ?? Promise.resolve(null),
         new Promise<null>(resoudre => window.setTimeout(() => resoudre(null), 1500)),
@@ -549,7 +571,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
          booster est redevenu saccadé »). Prévenir l'accueil relance le calcul
          du rang et redessine tout l'écran derrière la scène, en pleine
          animation. On le fait quand la page de fin est là, ou à la fermeture. */
-      gainEnAttente.current = tirage.exp > 0;
+      gainEnAttente.current = !blanc && tirage.exp > 0;
       if (!mouvementReduit && dialog.current?.open) setSortie(cartesTirees);
       else setCartes(cartesTirees);
     } catch {
@@ -605,6 +627,9 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           </button>
           {!illimite && stock !== null && <small className={styles.reserve}>{stockHabituel ?? stock} / 3 en réserve{bonus > 0 && <> · +{bonus} bonus</>}</small>}
           </div>
+          {user?.is_admin && <button type="button" className={styles.blanc}
+            disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie}
+            onClick={() => { demanderMouvementAppareil(); void preparerSachet(true); }}>Ouvrir à blanc</button>}
           {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>
         {prochain !== null && !illimite && <div className={styles.prochain}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
@@ -613,10 +638,10 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         <div className={styles.ecran} data-sortie={sortie ? "" : undefined}>
           {!cartes && <>
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
-            <h2 id="titre-booster" aria-live="polite">{illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
+            <h2 id="titre-booster" aria-live="polite">{blanc ? "Booster à blanc" : illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} rarete={sortie?.[2]?.rarete} ouvrir={() => { void ouvrir(); }}
               chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
-            {!illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
+            {blanc ? <p>Simulation : aucune carte ni EXP gagnée</p> : !illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
             <button type="button" className={styles.chancesBouton} onClick={ouvrirChances}>Mes chances de rareté</button>
             {chancesOuvertes && <div className={styles.chancesFond} onClick={() => setChancesOuvertes(false)}>
               <div className={styles.chancesFiche} role="dialog" aria-label="Mes chances de rareté" onClick={e => e.stopPropagation()}>
@@ -645,7 +670,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           onRecap={finScene}
           infos={<InfosFin cartes={tirageAffiche} exemplaires={exemplaires} avant={tailleAvant} />}
           actions={<>
-            <ActionsFin stock={stock} illimite={illimite} prochainMs={prochain} compte={compteRebours}
+            <ActionsFin stock={stock} illimite={illimite || blanc} prochainMs={prochain} compte={compteRebours}
               onSuivant={ouvrirSuivant} onCollection={() => dialog.current?.close()} />
             {erreurCoach && <p role="alert">{erreurCoach}</p>}
           </>} />}

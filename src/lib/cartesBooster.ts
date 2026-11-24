@@ -26,3 +26,7 @@ export const mouvements = {
 
 export const raretes = { commune: "Commune", rare: "Rare", epique: "Épique", legendaire: "Légendaire", chromatique: "Chromatique" } as const;
 export type Carte = { exercice: keyof typeof mouvements; rarete: keyof typeof raretes };
+
+// L'EXP de chaque carte, le même barème que la base (`booster_credit_aura`).
+export const EXP_CARTE: Record<Carte["rarete"], number> = { commune: 5, rare: 8, epique: 10, legendaire: 20, chromatique: 30 };
+export const expDesCartes = (cartes: Carte[]) => cartes.reduce((n, c) => n + EXP_CARTE[c.rarete], 0);

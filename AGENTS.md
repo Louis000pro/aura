@@ -56,6 +56,16 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Les ouvertures à blanc — 2026-11-24
+
+Louis : simuler tout le déroulé du booster à l'infini, sans rien gagner,
+administrateurs seulement. « Ouvrir à blanc » sous le bouton du booster
+(`is_admin`) : `/api/admin/booster-blanc` (`exigerAdmin`) appelle
+`tirer_booster_exercices`, qui tire sans rien écrire. Donc ni carte, ni EXP,
+ni réserve, ni statistique, ni chances cumulées. La page de fin simule
+l'EXP et « Nouvelle » ; l'accueil n'est pas prévenu. ⚠️ Différent du compte
+d'essai illimité (`/api/boosters/essai`), qui, lui, enregistre.
+
 ## Les bruitages du booster, et plus de compteur — 2026-11-24
 
 Louis : retirer la barre « Carte 1 sur 3 » (elle portait la couleur de la
