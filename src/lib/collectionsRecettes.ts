@@ -310,6 +310,36 @@ export const NATURE: Record<string, NatureRecette> = {
   "rochers-coco-au-chocolat-noir": "dessert",
   "tartelettes-au-chocolat-et-a-la-cacahuete": "dessert",
   "crumble-de-rhubarbe-aux-amandes": "dessert",
+  "oeufs-a-la-turque-yaourt-et-beurre-au-paprika": "petit-dej",
+  "pancake-au-four-a-la-poire-et-aux-amandes": "petit-dej",
+  "scones-au-cheddar-et-a-la-ciboulette": "petit-dej",
+  "gaufres-de-patate-douce-et-oeuf-au-plat": "petit-dej",
+  "champignons-farcis-a-l-ail-et-au-persil": "entree",
+  "samoussas-aux-legumes-et-au-curry": "entree",
+  "croquettes-de-mais-a-la-feta": "entree",
+  "soupe-de-tomate-aux-haricots-blancs-et-au-basilic": "plat",
+  "salade-de-carottes-pois-chiches-et-dattes": "plat",
+  "patatas-bravas-et-sauce-tomate-fumee": "entree",
+  "poulet-basquaise-et-riz": "plat",
+  "keftas-de-boeuf-semoule-et-sauce-a-la-menthe": "plat",
+  "boulettes-suedoises-et-puree-de-pommes-de-terre": "plat",
+  "porc-au-caramel-et-riz": "plat",
+  "crevettes-a-la-tomate-et-au-lait-de-coco": "plat",
+  "enchiladas-aux-haricots-rouges-et-au-mais": "plat",
+  "pizza-aux-champignons-et-a-la-mozzarella": "plat",
+  "arancini-au-four-tomate-et-mozzarella": "plat",
+  "orzo-aux-epinards-feta-et-citron": "plat",
+  "aubergines-laquees-au-miso-et-riz": "plat",
+  "tofu-satay-riz-et-concombre": "plat",
+  "dhal-de-pois-casses-au-lait-de-coco": "plat",
+  "cannellonis-a-la-courge-et-aux-noisettes": "plat",
+  "poisson-pane-a-la-noix-de-coco-et-salade-de-mangue": "plat",
+  "gateau-renverse-a-l-ananas": "dessert",
+  "flan-coco-au-caramel": "dessert",
+  "tarte-rustique-aux-abricots-et-aux-amandes": "dessert",
+  "blondies-au-chocolat-blanc-et-aux-framboises": "dessert",
+  "semoule-au-chocolat-et-a-l-orange": "dessert",
+  "cheesecake-au-citron-et-aux-speculoos": "dessert",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -396,6 +426,14 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "rochers-coco-au-chocolat-noir": { min: 50, texte: "30 minutes de refroidissement puis 20 minutes au réfrigérateur" },
   "tartelettes-au-chocolat-et-a-la-cacahuete": { min: 161, texte: "20 minutes pour la pâte, 20 minutes pour les fonds, 1 minute pour la ganache et 2 h au frais" },
   "crumble-de-rhubarbe-aux-amandes": { min: 15, texte: "15 minutes pour laisser tiédir" },
+  "arancini-au-four-tomate-et-mozzarella": { min: 80, texte: "20 min pour tiédir puis 1 h au réfrigérateur" },
+  "cannellonis-a-la-courge-et-aux-noisettes": { min: 5, texte: "5 min avant de servir" },
+  "gateau-renverse-a-l-ananas": { min: 30, texte: "10 min avant démoulage puis 20 min pour tiédir" },
+  "flan-coco-au-caramel": { min: 225, texte: "45 min pour refroidir puis 3 h au réfrigérateur" },
+  "tarte-rustique-aux-abricots-et-aux-amandes": { min: 20, texte: "20 min pour tiédir" },
+  "blondies-au-chocolat-blanc-et-aux-framboises": { min: 60, texte: "1 h pour refroidir" },
+  "semoule-au-chocolat-et-a-l-orange": { min: 75, texte: "15 min pour tiédir puis 1 h au réfrigérateur" },
+  "cheesecake-au-citron-et-aux-speculoos": { min: 480, texte: "8 h au réfrigérateur" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -509,6 +547,8 @@ export const MATINS_SALES = new Set([
   "tartines-chaudes-aux-champignons-et-oeuf",
   "oeufs-brouilles-aux-tomates-et-au-cheddar",
   "oeufs-brouilles-aux-poireaux-et-au-chevre",
+  "oeufs-a-la-turque-yaourt-et-beurre-au-paprika", "scones-au-cheddar-et-a-la-ciboulette",
+  "gaufres-de-patate-douce-et-oeuf-au-plat",
 ]);
 export const estSale = (r: Recipe) => { const n = natureDe(r); return n === "plat" || n === "entree" || MATINS_SALES.has(r.id); };
 const sucre = (r: Recipe) => !estSale(r);
@@ -523,7 +563,7 @@ const FROMAGE = /emmental|parmesan|mozzarella|reblochon|comte|gruyere|raclette|c
 const FRUIT = /pomme|poire|banane|fraise|framboise|myrtille|mangue|citron|orange|agrume|kiwi|clementine|peche|passion|fruits rouges|grenade|abricot|cerise|ananas/;
 const POISSON = /saumon|cabillaud|thon|crevette|gambas|\bmoules?\b|saint-jacques|poisson|sardine|maquereau|truite|dorade|merlu|colin|crabe|calamar/;
 const VIANDE = /boeuf|\bveau\b|agneau|porc|steak|saucisse|lardon|canard|magret|guanciale|chorizo|jambon|bacon/;
-const PATES = /\b(pates|coquillettes|rigatoni|fusilli|spaghetti|penne|tagliatelle|lasagnes?|gnocchis?)\b/;
+const PATES = /\b(pates|orzo|cannellonis?|coquillettes|rigatoni|fusilli|spaghetti|penne|tagliatelle|lasagnes?|gnocchis?)\b/;
 
 export const ENVIES: Envie[] = [
   /* Une saveur */
@@ -573,7 +613,7 @@ export const ENVIES: Envie[] = [
       "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame", "falafels-au-four-et-sauce-tahini", "bruschetta-tomate-basilic",
       "galettes-de-riz-au-beurre-de-cacahuete-et-banane", "cookies-proteines-aux-pepites-de-chocolat", "tarte-fine-aux-pommes",
       "croque-monsieur-poulet-pesto-revisite", "galettes-de-sarrasin-completes",
-      "feuilletes-aux-champignons-et-aux-noix", "tatins-d-echalotes-au-vinaigre-balsamique", "wellington-vegetal-aux-lentilles-et-aux-champignons", "couronne-feuilletee-aux-epinards-et-a-la-feta", "sables-a-l-orange-et-a-la-cannelle", "tarte-aux-noix-et-au-caramel") },
+      "feuilletes-aux-champignons-et-aux-noix", "tatins-d-echalotes-au-vinaigre-balsamique", "wellington-vegetal-aux-lentilles-et-aux-champignons", "couronne-feuilletee-aux-epinards-et-a-la-feta", "sables-a-l-orange-et-a-la-cannelle", "tarte-aux-noix-et-au-caramel", "champignons-farcis-a-l-ail-et-au-persil", "samoussas-aux-legumes-et-au-curry", "croquettes-de-mais-a-la-feta", "patatas-bravas-et-sauce-tomate-fumee", "arancini-au-four-tomate-et-mozzarella", "poisson-pane-a-la-noix-de-coco-et-salade-de-mangue") },
 
   /* Un plat */
   { id: "pates", label: "Pâtes", famille: "plat", tuile: "spaghetti-aux-boulettes-de-dinde", demande: "de pâtes",
@@ -588,13 +628,13 @@ export const ENVIES: Envie[] = [
     garde: (r) => /soupe|veloute|ramen|\bpho\b|harira|minestrone|pot-au-feu/.test(nom(r)) },
   { id: "gratin", label: "Gratin", famille: "plat", tuile: "gratin-dauphinois-leger", demande: "de gratin",
     sousTitre: "Des plats gratinés au four.",
-    garde: (r) => natureDe(r) !== "entree" && /gratin|lasagne|parmentier|tartiflette|brandade/.test(nom(r)) },
+    garde: (r) => natureDe(r) !== "entree" && /gratin|lasagne|cannelloni|enchilada|parmentier|tartiflette|brandade/.test(nom(r)) },
   { id: "salade", label: "Salades et bowls", famille: "plat", tuile: "salade-cesar-legere-et-croustillante", demande: "de salade ou de bowl",
     sousTitre: "Des salades et des bols composés.",
     garde: (r) => (natureDe(r) === "plat" || natureDe(r) === "entree") && /salade|bowl|poke|panzanella|taboule/.test(nom(r)) },
   { id: "mains", label: "Avec les mains", famille: "plat", tuile: "quesadillas-jambon-fromage", demande: "à manger avec les mains",
     sousTitre: "Des recettes qui se mangent avec les doigts.",
-    garde: (r) => /burger|wrap|quesadilla|croque|fajita|nuggets|fish|galette-saucisse/.test(nom(r)) },
+    garde: (r) => /burger|pizza|samoussa|wrap|quesadilla|croque|fajita|nuggets|fish|galette-saucisse/.test(nom(r)) },
 
   /* Un ingrédient */
   { id: "legumes", label: "Légumes", famille: "ingredient", tuile: "buddha-bowl-pois-chiches-rotis-houmous", demande: "sans viande ni poisson",
@@ -616,20 +656,20 @@ export const ENVIES: Envie[] = [
   /* Ailleurs */
   { id: "asie", label: "Asie", famille: "ailleurs", tuile: "bowl-coreen-au-boeuf-facon-bibimbap", demande: "d’Asie",
     sousTitre: "Des plats d’Asie, de l’Inde à la Corée.",
-    garde: (r) => /ramen|\bpho\b|wok|cantonais|poke|thai|soja|bibimbap|coreen|nouilles|tikka|masala/.test(nom(r)) },
+    garde: (r) => /ramen|\bpho\b|wok|cantonais|poke|thai|soja|bibimbap|coreen|nouilles|tikka|masala|miso|satay|dhal|porc au caramel|samoussa/.test(nom(r)) },
   { id: "italie", label: "Italie", famille: "ailleurs", tuile: "lasagnes-epinards-ricotta", demande: "italienne",
     sousTitre: "Des recettes venues d’Italie.",
     garde: parmi("pates-bolognaise-maison", "rigatoni-creme-parmesan-guanciale", "fusilli-mediterraneens", "semifreddo-amande",
       "risotto-cremeux-aux-champignons", "bruschetta-tomate-basilic", "tartare-tomates-burrata", "panzanella-toscane",
       "minestrone-d-hiver", "lasagnes-epinards-ricotta", "gnocchis-poeles-a-la-butternut-et-a-la-sauge", "tiramisu-proteine-au-skyr",
       "spaghetti-aux-boulettes-de-dinde", "pates-completes-au-thon-tomates-cerises-et-capres", "frittata-aux-legumes",
-      "risotto-aux-poireaux-et-aux-saint-jacques", "risotto-aux-asperges-et-au-citron", "polenta-cremeuse-champignons-et-oeuf-au-plat") },
+      "risotto-aux-poireaux-et-aux-saint-jacques", "risotto-aux-asperges-et-au-citron", "polenta-cremeuse-champignons-et-oeuf-au-plat", "pizza-aux-champignons-et-a-la-mozzarella", "arancini-au-four-tomate-et-mozzarella", "cannellonis-a-la-courge-et-aux-noisettes") },
   { id: "mediterranee", label: "Méditer­ranée", famille: "ailleurs", tuile: "falafels-au-four-et-sauce-tahini", demande: "méditerranéenne",
     sousTitre: "Du Maroc au Liban, en passant par la Grèce.",
-    garde: (r) => /tajine|harira|houmous|falafel|taboule|tzatziki|grecque|shakshuka|caviar d'aubergine|aubergines grillees|halloumi|citron et aux olives|fenouil a l'orange|pasteque, feta/.test(nom(r)) },
+    garde: (r) => /tajine|harira|houmous|falafel|taboule|tzatziki|grecque|shakshuka|caviar d'aubergine|aubergines grillees|halloumi|citron et aux olives|fenouil a l'orange|pasteque, feta|kefta|oeufs a la turque/.test(nom(r)) },
   { id: "mexique", label: "Mexique", famille: "ailleurs", tuile: "guacamole-nachos", demande: "mexicaine",
     sousTitre: "Des recettes tex-mex et mexicaines.",
-    garde: (r) => /chili|mexicain|quesadilla|guacamole|nachos|fajita|tacos/.test(nom(r)) },
+    garde: (r) => /chili|mexicain|quesadilla|guacamole|nachos|fajita|tacos|enchilada/.test(nom(r)) },
   { id: "classique", label: "Un classique", famille: "ailleurs", tuile: "boeuf-bourguignon", demande: "d’un grand classique français",
     sousTitre: "Les grands classiques de la cuisine française.",
     garde: parmi("boeuf-bourguignon", "blanquette-de-veau-legere", "pot-au-feu", "coq-au-vin", "petit-sale-aux-lentilles",
@@ -640,7 +680,7 @@ export const ENVIES: Envie[] = [
       "financiers-amande", "pain-d-epices", "gateau-au-yaourt-moelleux", "riz-au-lait-vanille", "tarte-fine-aux-pommes",
       "tarte-au-citron-meringuee", "galette-des-rois-frangipane", "buche-roulee-au-chocolat", "croque-monsieur-poulet-pesto-revisite",
       "soupe-poireaux-pommes-de-terre", "magret-de-canard-a-l-orange", "filet-mignon-aux-deux-pommes", "crumble-pomme-poire-a-l-avoine",
-      "gougeres-au-comte", "vol-au-vent-au-poulet-et-aux-champignons", "gratin-de-cardons-au-parmesan", "navarin-d-agneau-aux-legumes-de-printemps", "quiche-aux-poireaux-et-au-saumon") },
+      "gougeres-au-comte", "vol-au-vent-au-poulet-et-aux-champignons", "gratin-de-cardons-au-parmesan", "navarin-d-agneau-aux-legumes-de-printemps", "quiche-aux-poireaux-et-au-saumon", "poulet-basquaise-et-riz") },
 
   /* Le temps qu'on a */
   { id: "vite", label: "Faire vite", famille: "temps", tuile: "wrap-poulet-crudites-sauce-yaourt", demande: `prête en ${MINUTES_RAPIDE} minutes ou moins`,
@@ -673,7 +713,7 @@ export const ENVIES: Envie[] = [
       "verrines-avocat-crevettes", "houmous-de-betterave", "caviar-d-aubergine", "tartare-de-saumon-aux-agrumes",
       "epis-de-mais-grilles-au-beurre-et-au-paprika", "salade-de-pasteque-feta-et-menthe", "muffins-sales-epinards-feta-tomates-sechees",
       "aubergines-grillees-au-yaourt-et-a-la-menthe", "mais-poele-au-paprika-et-au-citron-vert",
-      "feuilletes-aux-champignons-et-aux-noix", "gougeres-au-comte", "rillettes-de-saumon-au-citron-et-a-la-ciboulette", "verrines-de-betterave-pomme-et-chevre", "couronne-feuilletee-aux-epinards-et-a-la-feta") },
+      "feuilletes-aux-champignons-et-aux-noix", "gougeres-au-comte", "rillettes-de-saumon-au-citron-et-a-la-ciboulette", "verrines-de-betterave-pomme-et-chevre", "couronne-feuilletee-aux-epinards-et-a-la-feta", "scones-au-cheddar-et-a-la-ciboulette", "champignons-farcis-a-l-ail-et-au-persil", "samoussas-aux-legumes-et-au-curry", "croquettes-de-mais-a-la-feta", "patatas-bravas-et-sauce-tomate-fumee") },
   { id: "recevoir", label: "Recevoir", famille: "moment", tuile: "magret-de-canard-a-l-orange", demande: "pour recevoir",
     sousTitre: "Des recettes pour les fêtes et les invités.", garde: (r) => aTag(r, "festif") },
   { id: "sport", label: "Après le sport", famille: "moment", tuile: "steak-hache-patate-douce-rotie-et-haricots-verts",

@@ -731,8 +731,11 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 
   /* Ce que la banque n'a pas, ce qui ne dit rien, et la ligne d'aide. */
   const pizza = chercherRecettes("pizza");
-  verdict("« pizza » le dit, et montre des recettes italiennes", pizza.aide === "Pas encore de pizza. Voici des recettes italiennes."
-    && pizza.recettes.length > 0 && pizza.recettes.every((r) => envie("italie").garde(r)), pizza.aide ?? "");
+  verdict("« pizza » trouve la pizza de la banque sans annoncer son absence",
+    pizza.aide === null && pizza.recettes.some((r) => r.id === "pizza-aux-champignons-et-a-la-mozzarella"), pizza.aide ?? "pizza présente");
+  const calzone = chercherRecettes("calzone");
+  verdict("un plat absent propose ses voisines italiennes", calzone.aide === "Pas encore de calzone. Voici des recettes italiennes."
+    && calzone.recettes.length > 0 && calzone.recettes.every((r) => envie("italie").garde(r)), calzone.aide ?? "");
   const kangourou = chercherRecettes("poulet kangourou");
   verdict("un mot qui ne mène à rien le dit, et ne vide pas le reste", kangourou.aide === "Rien pour «\u00a0kangourou\u00a0»."
     && memes(kangourou.recettes.map((r) => r.id), ids("poulet")), kangourou.aide ?? "");

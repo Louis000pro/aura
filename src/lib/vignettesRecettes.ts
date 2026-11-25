@@ -22,6 +22,15 @@ import { slugify } from "@/lib/recipeBank";
 type Regle = [RegExp, string];
 
 const INGREDIENTS: Regle[] = [
+  [/feuilles?-de-brick/, "feuille-brick"],
+  [/chapelure/, "chapelure"],
+  [/pate-a-pizza/, "pate-pizza"],
+  [/orzo/, "pates"],
+  [/cannelloni/, "cannelloni"],
+  [/miso/, "miso"],
+  [/speculoos/, "speculoos"],
+  [/chocolat-blanc/, "chocolat-blanc"],
+  [/^abricot$/, "abricot-frais"],
   // Préparations : leur nom contient celui d'un autre ingrédient.
   [/bouillon/, "bouillon"],
   [/saint-jacques/, "saint-jacques"],
@@ -269,6 +278,8 @@ const INGREDIENTS: Regle[] = [
 ];
 
 const USTENSILES: Regle[] = [
+  [/gaufrier/, "gaufrier"],
+  [/poche-a-douille/, "poche-douille"],
   [/rouleau/, "rouleau"],
   [/emporte-piece/, "emporte-piece"],
   [/billes-de-cuisson/, "billes-cuisson"],
