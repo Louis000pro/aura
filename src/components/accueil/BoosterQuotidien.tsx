@@ -12,6 +12,7 @@ import { mouvements, raretes, type Carte } from "@/lib/cartesBooster";
 import { lireCollectionBoosters } from "@/lib/collectionBoosters";
 import SachetBooster, { MiniSachetBooster, demanderMouvementAppareil } from "./SachetBooster";
 import { expDesCartes } from "@/lib/cartesBooster";
+import { preparerSonsBooster } from "@/lib/sonsBooster";
 import OuvertureCartes from "./OuvertureCartes";
 import { InfosFin, ActionsFin } from "./FinBooster";
 import { libererCelebration, retenirCelebration } from "@/lib/celebrationRang";
@@ -629,7 +630,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
           </div>
           {user?.is_admin && <button type="button" className={styles.blanc}
             disabled={statut === "chargement" || !portrait || preparation || chargement || !!sortie}
-            onClick={() => { demanderMouvementAppareil(); void preparerSachet(true); }}>Ouvrir à blanc</button>}
+            onClick={() => { demanderMouvementAppareil(); preparerSonsBooster(); void preparerSachet(true); }}>Ouvrir à blanc</button>}
           {erreurCoach && <p role="alert">{erreurCoach}</p>}
         </div>
         {prochain !== null && !illimite && <div className={styles.prochain}><small>Prochain booster</small><strong>{compteRebours}</strong></div>}
@@ -640,7 +641,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
             <button type="button" className={styles.fermer} aria-label="Fermer" onClick={() => dialog.current?.close()}>×</button>
             <h2 id="titre-booster" aria-live="polite">{blanc ? "Booster à blanc" : illimite ? "Booster d’essai" : ancienneCadence ? "Ton booster du jour" : "Ton booster"}</h2>
             {guideSachet && <SachetBooster key={essaiSachet + ":" + guideSachet} guide={guideSachet} rarete={sortie?.[2]?.rarete} ouvrir={() => { void ouvrir(); }}
-              chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} />}
+              chargement={chargement || !!sortie} sortie={!!sortie} reveler={terminerChute} sons={blanc} />}
             {blanc ? <p>Simulation : aucune carte ni EXP gagnée</p> : !illimite && <p>{ancienneCadence ? "Prochain booster demain à minuit" : "Un booster de plus toutes les 3 h, jusqu’à 3 en réserve"}</p>}
             <button type="button" className={styles.chancesBouton} onClick={ouvrirChances}>Mes chances de rareté</button>
             {chancesOuvertes && <div className={styles.chancesFond} onClick={() => setChancesOuvertes(false)}>
@@ -665,7 +666,7 @@ export default function BoosterQuotidien({ userId, jour, onGain }: { userId: str
         {tirageAffiche && profil && <OuvertureCartes key={tirageId} cartes={tirageAffiche}
           images={tirageAffiche.map(item => imageCarte(item, profil))}
           libelles={tirageAffiche.map(item => mouvements[item.exercice][0] + " · " + raretes[item.rarete])}
-          exp={exp} exemplaires={exemplaires} mode={modeScene} sachet={rectSachet}
+          exp={exp} exemplaires={exemplaires} mode={modeScene} sachet={rectSachet} sons={blanc}
           onFermer={() => dialog.current?.close()}
           onRecap={finScene}
           infos={<InfosFin cartes={tirageAffiche} exemplaires={exemplaires} avant={tailleAvant} />}

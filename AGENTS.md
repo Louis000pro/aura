@@ -66,6 +66,18 @@ ni réserve, ni statistique, ni chances cumulées. La page de fin simule
 l'EXP et « Nouvelle » ; l'accueil n'est pas prévenu. ⚠️ Différent du compte
 d'essai illimité (`/api/boosters/essai`), qui, lui, enregistre.
 
+## Les sons du booster, en essai à blanc — 2026-11-25
+
+Louis : premium, soigné, agréable, « sans trop faire hors du commun ». Seconde
+version, avec de vrais enregistrements CC0 (`docs/sons-booster.md`). Quatre
+moments : le film qui se déchire (le volume suit la vitesse du doigt), les
+cartes qui sortent, la dernière carte (kalimba, plus de notes selon la rareté)
+et l'EXP qui monte (trois notes calmes). ⚠️ Ils ne jouent que dans « Ouvrir à
+blanc » (prop `sons={blanc}`) **tant que Louis ne les a pas écoutés et validés** ;
+les ouvrir à tous = passer `sons` et appeler `preparerSonsBooster` aussi sur
+« Ouvrir le booster ». Joué de bout en bout sur une page d'essai (supprimée),
+niveaux mesurés ; jamais entendu par l'agent.
+
 ## Le booster sans compteur, et les sons à refaire — 2026-11-24
 
 Louis : la barre « Carte 1 sur 3 » est retirée (elle portait la couleur de la

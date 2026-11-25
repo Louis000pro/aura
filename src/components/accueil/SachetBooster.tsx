@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import type { GuideId } from "@/lib/guides";
+import { sonDechirure, sonDetache, taireDechirure } from "@/lib/sonsBooster";
 import styles from "./SachetBooster.module.css";
 
 const dossier = "/boosters/sachet-360/";
@@ -142,9 +143,10 @@ function position({ clientX, clientY }: PointerEvent, { left, top, width, height
   ];
 }
 
-export default function SachetBooster({ guide, ouvrir, chargement, sortie, reveler, rarete }: {
+export default function SachetBooster({ guide, ouvrir, chargement, sortie, reveler, rarete, sons = false }: {
   guide: GuideId;
   rarete?: string;
+  sons?: boolean;
   ouvrir: () => void;
   chargement: boolean;
   sortie: boolean;
@@ -177,6 +179,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     if (imageRotation.current !== null) cancelAnimationFrame(imageRotation.current);
     if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
     suite.current?.animation.cancel();
+    taireDechirure();
   }, []);
 
   // Le reflet suit trois choses : la rotation du sachet (doigt, élan, retour de face), l'inclinaison
@@ -357,7 +360,10 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
       if (enCours.current) return;
       const k = Math.min(1, (temps - debut) / 200);
       const x = x0 + (x1 - x0) * k;
-      if ((x - geste.trace[geste.trace.length - 1][0]) * geste.sens >= 1.8) geste.trace.push([x, y]);
+      if ((x - geste.trace[geste.trace.length - 1][0]) * geste.sens >= 1.8) {
+        if (sons) sonDechirure(Math.abs(x - geste.trace[geste.trace.length - 1][0]));
+        geste.trace.push([x, y]);
+      }
       if (k >= 1) { ouvrirSachet(geste.trace, geste.sens); return; }
       peindreDechirure(geste.trace, geste.sens, false);
       requestAnimationFrame(pas);
@@ -391,6 +397,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
   function ouvrirSachet(trace: Point[], sens: 1 | -1) {
     if (enCours.current || chargement) return;
     enCours.current = true;
+    if (sons) sonDetache();
     if (imageDechirure.current !== null) cancelAnimationFrame(imageDechirure.current);
     imageDechirure.current = null;
     peindreDechirure([...trace, [sens === 1 ? 100 : 0, trace[trace.length - 1][1]]], sens, true);
@@ -407,6 +414,7 @@ export default function SachetBooster({ guide, ouvrir, chargement, sortie, revel
     // La coupe reste à la hauteur où le doigt s'est posé : une ligne fine, jamais des marches.
     void yDoigt;
     const y = yPrecedent;
+    if (sons) sonDechirure(Math.abs(x - precedent));
     geste.trace.push([x, y]);
     if (geste.sens === 1 ? x >= 94 : x <= 6) {
       ouvrirSachet(geste.trace, geste.sens);

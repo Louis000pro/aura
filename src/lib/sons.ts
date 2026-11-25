@@ -7,7 +7,7 @@
  * jouent la MUSIQUE DU RANG, qui vit dans `musiqueRang.ts` (2026-10-24).
  * Un clic sonore sur chaque bouton deviendrait du bruit en deux jours.
  *
- * ⚠️ AUCUN FICHIER AUDIO. Les sons sont synthétisés par Web Audio : rien à
+ * ⚠️ AUCUN FICHIER AUDIO ICI (l'ouverture du booster a les siens, `sonsBooster.ts`). Les sons sont synthétisés par Web Audio : rien à
  * télécharger, rien à mettre en cache, et ils ne coûtent aucun octet de
  * bande passante (l'egress a déjà explosé une fois).
  *

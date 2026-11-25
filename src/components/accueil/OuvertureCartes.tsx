@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EXP_CARTE as EXP, type Carte } from "@/lib/cartesBooster";
+import { couperSonsBooster, sonCartes, sonDerniereCarte, sonExp } from "@/lib/sonsBooster";
 import styles from "./OuvertureCartes.module.css";
 
 type Rarete = Carte["rarete"];
@@ -45,7 +46,7 @@ function ressort(k: number, c: number) {
 const TITRE: Partial<Record<Rarete, string>> = { rare: "Une rare !", epique: "Une épique !", legendaire: "Une légendaire !", chromatique: "Une chromatique !" };
 const RANG_RARETE: Rarete[] = ["commune", "rare", "epique", "legendaire", "chromatique"];
 
-export default function OuvertureCartes({ cartes, images, libelles, exp, exemplaires, mode, sachet, infos, actions, onFermer, onRecap }: {
+export default function OuvertureCartes({ cartes, images, libelles, exp, exemplaires, mode, sachet, infos, actions, onFermer, onRecap, sons = false }: {
   cartes: Carte[];
   images: string[];
   libelles: string[];
@@ -58,6 +59,8 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
   infos?: ReactNode;
   actions: ReactNode;
   onFermer: () => void;
+  /** Les sons du booster (seulement l’ouverture à blanc, tant que Louis ne les a pas validés). */
+  sons?: boolean;
   /** Le récapitulatif est à l'écran : le booster est fini. */
   onRecap?: () => void;
 }) {
@@ -166,6 +169,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
       els.forEach((e, i) => { poser(i, P.dedans()); e.style.zIndex = String(3 - i); e.dataset.on = ""; });
       vibrer([14, 40, 22]);
       await attendre(110); if (!vivant) return;
+      if (sons) sonCartes();
       [2, 1, 0].forEach((i, k) => aller(i, P.sorti(i), { d: 540, e: "cubic-bezier(.16,.9,.3,1)", delay: k * 50 }));
       await attendre(580); if (!vivant) return;
       aller(0, P.centre());
@@ -220,6 +224,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
       await attendre(d * (grande && o.tours ? .62 : .42)); if (!vivant) return;
       // La carte vue : un reflet la traverse, et une lumière douce s'épanouit derrière elle.
       vibrer(grande ? o.vibre : [8]);
+      if (sons && grande) sonDerniereCarte(carte.rarete);
       if (grande) joue(morceau(i, styles.balai), [{ opacity: 0, transform: "translate3d(-45%,0,0)" }, { opacity: .85, offset: .25 }, { opacity: .7, offset: .7 }, { opacity: 0, transform: "translate3d(45%,0,0)" }],
         { duration: 950, easing: "ease-out", delay: 120 });
       racine!.dataset.rarete = carte.rarete;
@@ -308,6 +313,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
           { duration: 720, easing: "cubic-bezier(.4,0,.2,1)" });
           await attendre(660); if (!vivant) return;
           cumul += valeur; setTotal(cumul); vibrer([6]);
+          if (sons) sonExp(k);
           joue(pastille.current, [{ transform: "scale(1)" }, { transform: "scale(1.14)" }, { transform: "scale(1)" }], { duration: 260, easing: "ease-out", fill: "none" });
         }
       } else setTotal(exp);
@@ -363,7 +369,7 @@ export default function OuvertureCartes({ cartes, images, libelles, exp, exempla
       els.forEach(e => { e.dataset.actif = ""; });
     } else void sortie();
 
-    return () => { vivant = false; commandes.current = null; };
+    return () => { vivant = false; commandes.current = null; couperSonsBooster(); };
     // La scène se monte une fois par tirage : la suite ne dépend que de ce qu'elle a reçu au départ.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
