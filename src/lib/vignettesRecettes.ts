@@ -22,6 +22,7 @@ import { slugify } from "@/lib/recipeBank";
 type Regle = [RegExp, string];
 
 const INGREDIENTS: Regle[] = [
+  [/sardine/, "sardines"],
   [/mais-a-pop-corn/, "mais-popcorn"],
   [/petits?-beurre/, "petit-beurre"],
   [/feuilles?-de-brick/, "feuille-brick"],
