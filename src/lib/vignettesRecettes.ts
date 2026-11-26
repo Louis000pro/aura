@@ -22,6 +22,8 @@ import { slugify } from "@/lib/recipeBank";
 type Regle = [RegExp, string];
 
 const INGREDIENTS: Regle[] = [
+  [/anchois/, "anchois"],
+  [/safran/, "safran"],
   [/sardine/, "sardines"],
   [/mais-a-pop-corn/, "mais-popcorn"],
   [/petits?-beurre/, "petit-beurre"],
@@ -87,7 +89,7 @@ const INGREDIENTS: Regle[] = [
   [/reblochon/, "reblochon"],
   [/feta|halloumi/, "feta"],
   [/mozzarella|burrata/, "mozzarella"],
-  [/parmesan/, "parmesan"],
+  [/parmesan|pecorino/, "parmesan"],
   [/(emmental|comte|gruyere|fromage)-rape/, "fromage-rape"],
   [/emmental|comte|gruyere|cheddar|fromage/, "fromage"],
   [/jaune-d-oeuf|blanc-d-oeuf/, "oeuf-casse"],
@@ -281,6 +283,8 @@ const INGREDIENTS: Regle[] = [
 ];
 
 const USTENSILES: Regle[] = [
+  [/mortier/, "mortier"],
+  [/chalumeau/, "chalumeau"],
   [/couvercle/, "couvercle"],
   [/gaufrier/, "gaufrier"],
   [/poche-a-douille/, "poche-douille"],

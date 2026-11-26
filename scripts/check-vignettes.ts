@@ -60,6 +60,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 /* ── 3 · Un nom contenu dans un autre ne prend pas sa vignette ── */
 {
   const ingredients: [string, string][] = [
+    ["Filets d’anchois à l’huile égouttés", "anchois"], ["Pecorino râpé", "parmesan"], ["Safran", "safran"],
     ["Feuilles de laitue", "salade"], ["Lait demi-écrémé", "lait"], ["Lait de soja", "lait-vegetal"], ["Lait de coco", "noix-de-coco"],
     ["Bœuf à braiser", "boeuf"], ["Bœuf haché 5% MG", "steak-hache"], ["Œuf", "oeuf"], ["Jaune d’œuf", "oeuf-casse"],
     ["Petits œufs en chocolat", "oeufs-chocolat"], ["Potimarron", "potimarron"], ["Crème de marrons", "chataigne"],

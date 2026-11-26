@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { lireFluent } from "./vignettes/fluent.mjs";
 
-const MODULES = ["serie-1", "herbes", "declinaisons", "serie-2", "serie-3", "serie-4", "serie-5", "hiver-festif", "printemps", "carte-blanche", "petits-plaisirs", "soirs-faciles", "ustensiles-petits-plaisirs", "ustensiles-carte-blanche", "ustensiles-festif", "ustensiles-1", "ustensiles-2", "ustensiles-3"];
+const MODULES = ["serie-1", "herbes", "declinaisons", "serie-2", "serie-3", "serie-4", "serie-5", "hiver-festif", "printemps", "carte-blanche", "petits-plaisirs", "soirs-faciles", "classiques", "ustensiles-classiques", "ustensiles-petits-plaisirs", "ustensiles-carte-blanche", "ustensiles-festif", "ustensiles-1", "ustensiles-2", "ustensiles-3"];
 const DESSINS = {};
 for (const m of MODULES) {
   const lot = (await import(`./vignettes/dessins/${m}.mjs`)).default;
