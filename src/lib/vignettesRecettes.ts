@@ -22,6 +22,8 @@ import { slugify } from "@/lib/recipeBank";
 type Regle = [RegExp, string];
 
 const INGREDIENTS: Regle[] = [
+  [/mais-a-pop-corn/, "mais-popcorn"],
+  [/petits?-beurre/, "petit-beurre"],
   [/feuilles?-de-brick/, "feuille-brick"],
   [/chapelure/, "chapelure"],
   [/pate-a-pizza/, "pate-pizza"],
@@ -278,6 +280,7 @@ const INGREDIENTS: Regle[] = [
 ];
 
 const USTENSILES: Regle[] = [
+  [/couvercle/, "couvercle"],
   [/gaufrier/, "gaufrier"],
   [/poche-a-douille/, "poche-douille"],
   [/rouleau/, "rouleau"],

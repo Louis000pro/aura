@@ -73,11 +73,14 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
   verdict("chaque recette se trouve par au moins deux envies", seules.length === 0, seules.join(", ") || `${RECIPES.length} recettes`);
 
   const vite = recettesDe("vite");
-  const tropLongues = vite.filter((r) => minutesTotales(r) > MINUTES_RAPIDE || !!REPOS[r.id]?.texte);
+  const tropLongues = vite.filter((r) => minutesTotales(r) > MINUTES_RAPIDE);
   verdict(`« Faire vite » : tout est prêt en ${MINUTES_RAPIDE} minutes, repos compris`, tropLongues.length === 0,
     tropLongues.map((r) => `${r.id} ${minutesTotales(r)} min`).join(", ") || `${vite.length} recettes`);
   verdict("« Faire vite » ne garde ni gambas (10 min de marinade) ni overnight oats (une nuit)",
     !vite.some((r) => r.id === "gambas-grillees-ail-persil" || r.id === "overnight-oats-chocolat-noisette"), "le repos entre dans le compte");
+  const mugCitron = RECIPES.find((r) => r.id === "mug-cake-moelleux-au-citron")!;
+  verdict("« Faire vite » compte aussi un court repos décrit",
+    REPOS[mugCitron.id]?.min === 2 && minutesTotales(mugCitron) === 9 && vite.some((r) => r.id === mugCitron.id), "7 min de préparation et cuisson, puis 2 min pour tiédir");
   verdict("« Faire vite » se lit de la plus courte à la plus longue",
     vite.every((r, i) => i === 0 || minutesTotales(vite[i - 1]) <= minutesTotales(r)), dureeRecette(vite[0]));
   const legumes = recettesDe("legumes");
@@ -123,7 +126,10 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
 
   /* Les puces : elles s'additionnent, et chacune change vraiment la liste. */
   const cas = recettesDe("sucre", [], ["chocolat", "vite"]);
-  verdict("Sucré, puis chocolat et faire vite : le pain perdu et le skyr rejoignent les six recettes de la maquette", cas.length === 8 && ["pain-perdu-a-la-clementine-et-au-chocolat-noir", "skyr-cacao-et-banane"].every((id) => cas.some((r) => r.id === id)), cas.map((r) => r.id).join(", "));
+  const temoinsChocolatRapide = ["banana-split", "mugcake-banane-cacao", "chocolat-chaud-proteine", "cafe-frappe-proteine", "shaker-chocolat-noisette", "fondant-au-chocolat-coeur-coulant", "pain-perdu-a-la-clementine-et-au-chocolat-noir", "skyr-cacao-et-banane", "croques-au-chocolat-et-a-la-banane"];
+  verdict("Sucré, chocolat et faire vite : les témoins restent et le croque les rejoint",
+    temoinsChocolatRapide.every((id) => cas.some((r) => r.id === id))
+      && !cas.some((r) => r.id === "mug-cake-moelleux-au-citron" || r.id === "cookie-geant-a-la-poele"), cas.map((r) => r.id).join(", "));
   const p = pucesDe("sucre", [], ["chocolat", "vite"]);
   verdict("les puces choisies passent en tête", p[0]?.id === "chocolat" && p[0].choisie && p[1]?.id === "vite" && p[1].choisie && !p[2]?.choisie,
     p.map((x) => (x.choisie ? `[${x.label}]` : x.label)).join(" · "));

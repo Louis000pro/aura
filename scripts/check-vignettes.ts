@@ -73,6 +73,7 @@ const fichierPublic = (chemin: string) => existsSync(new URL("../public" + chemi
     ["Pousses de soja", "pousses-soja"], ["Sauce soja", "sauce-soja"], ["Poivre noir", "poivre"], ["Poivron rouge", "poivron-rouge"],
     ["Glaçons", "glacons"], ["Glace vanille", "glace"], ["Bouillon de volaille", "bouillon"], ["Saumon fumé", "saumon-fume"],
     ["Fécule de maïs", "fecule"], ["Épi de maïs", "mais"],
+    ["Maïs à pop-corn", "mais-popcorn"], ["Petit-beurre", "petit-beurre"], ["Beurre", "beurre"],
   ];
   const fautes = ingredients.filter(([n, c]) => vignetteIngredient(n) !== c)
     .map(([n, c]) => `${n} → ${vignetteIngredient(n)} (attendu ${c})`);

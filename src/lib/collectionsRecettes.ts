@@ -340,6 +340,26 @@ export const NATURE: Record<string, NatureRecette> = {
   "blondies-au-chocolat-blanc-et-aux-framboises": "dessert",
   "semoule-au-chocolat-et-a-l-orange": "dessert",
   "cheesecake-au-citron-et-aux-speculoos": "dessert",
+  "croques-au-chocolat-et-a-la-banane": "petit-dej",
+  "tartines-de-fromage-frais-et-confiture-de-fraise": "petit-dej",
+  "granola-a-la-poele-miel-et-sesame": "petit-dej",
+  "fromage-blanc-compote-et-speculoos": "petit-dej",
+  "cookie-geant-a-la-poele": "encas",
+  "petits-palmiers-au-sucre": "encas",
+  "chaussons-faciles-a-la-compote": "encas",
+  "tortillas-roulees-a-la-cannelle": "encas",
+  "biscuits-a-la-cacahuete-trois-ingredients": "encas",
+  "carres-d-avoine-a-la-confiture": "encas",
+  "pop-corn-au-caramel": "encas",
+  "dattes-fourrees-a-la-cacahuete-et-au-chocolat": "encas",
+  "mug-cake-moelleux-au-citron": "dessert",
+  "verrines-de-fraises-et-petits-beurre": "dessert",
+  "creme-vanille-sans-oeuf": "dessert",
+  "peches-roties-au-miel-et-au-yaourt": "dessert",
+  "bouchees-glacees-de-banane-au-chocolat": "dessert",
+  "crumble-de-banane-a-la-poele-et-a-la-coco": "dessert",
+  "glace-vanille-au-cafe-chaud": "dessert",
+  "fromage-blanc-a-la-creme-de-marrons": "dessert",
 };
 
 /** La nature d'une recette. Sans entrée écrite (une recette toute neuve),
@@ -434,6 +454,17 @@ export const REPOS: Record<string, { min: number; texte?: string }> = {
   "blondies-au-chocolat-blanc-et-aux-framboises": { min: 60, texte: "1 h pour refroidir" },
   "semoule-au-chocolat-et-a-l-orange": { min: 75, texte: "15 min pour tiédir puis 1 h au réfrigérateur" },
   "cheesecake-au-citron-et-aux-speculoos": { min: 480, texte: "8 h au réfrigérateur" },
+  "granola-a-la-poele-miel-et-sesame": { min: 15, texte: "15 min pour refroidir le granola" },
+  "cookie-geant-a-la-poele": { min: 15, texte: "5 min pour tiédir le beurre puis 10 min pour laisser prendre le cookie" },
+  "petits-palmiers-au-sucre": { min: 25, texte: "15 min au réfrigérateur puis 10 min pour refroidir" },
+  "chaussons-faciles-a-la-compote": { min: 10, texte: "10 min pour tiédir" },
+  "biscuits-a-la-cacahuete-trois-ingredients": { min: 15, texte: "15 min pour refroidir" },
+  "carres-d-avoine-a-la-confiture": { min: 30, texte: "30 min pour refroidir" },
+  "pop-corn-au-caramel": { min: 10, texte: "10 min pour refroidir le caramel" },
+  "dattes-fourrees-a-la-cacahuete-et-au-chocolat": { min: 20, texte: "20 min au réfrigérateur" },
+  "mug-cake-moelleux-au-citron": { min: 2, texte: "2 min pour tiédir" },
+  "creme-vanille-sans-oeuf": { min: 140, texte: "20 min pour tiédir puis 2 h au réfrigérateur" },
+  "bouchees-glacees-de-banane-au-chocolat": { min: 95, texte: "1 h au congélateur avant le chocolat, puis 30 min après et 5 min avant de servir" },
 };
 
 /** Le temps que la recette demande vraiment, repos compris. */
@@ -613,7 +644,7 @@ export const ENVIES: Envie[] = [
       "bowl-de-tofu-croustillant-nouilles-de-riz-et-edamame", "falafels-au-four-et-sauce-tahini", "bruschetta-tomate-basilic",
       "galettes-de-riz-au-beurre-de-cacahuete-et-banane", "cookies-proteines-aux-pepites-de-chocolat", "tarte-fine-aux-pommes",
       "croque-monsieur-poulet-pesto-revisite", "galettes-de-sarrasin-completes",
-      "feuilletes-aux-champignons-et-aux-noix", "tatins-d-echalotes-au-vinaigre-balsamique", "wellington-vegetal-aux-lentilles-et-aux-champignons", "couronne-feuilletee-aux-epinards-et-a-la-feta", "sables-a-l-orange-et-a-la-cannelle", "tarte-aux-noix-et-au-caramel", "champignons-farcis-a-l-ail-et-au-persil", "samoussas-aux-legumes-et-au-curry", "croquettes-de-mais-a-la-feta", "patatas-bravas-et-sauce-tomate-fumee", "arancini-au-four-tomate-et-mozzarella", "poisson-pane-a-la-noix-de-coco-et-salade-de-mangue") },
+      "feuilletes-aux-champignons-et-aux-noix", "tatins-d-echalotes-au-vinaigre-balsamique", "wellington-vegetal-aux-lentilles-et-aux-champignons", "couronne-feuilletee-aux-epinards-et-a-la-feta", "sables-a-l-orange-et-a-la-cannelle", "tarte-aux-noix-et-au-caramel", "champignons-farcis-a-l-ail-et-au-persil", "samoussas-aux-legumes-et-au-curry", "croquettes-de-mais-a-la-feta", "patatas-bravas-et-sauce-tomate-fumee", "arancini-au-four-tomate-et-mozzarella", "poisson-pane-a-la-noix-de-coco-et-salade-de-mangue", "granola-a-la-poele-miel-et-sesame", "petits-palmiers-au-sucre", "chaussons-faciles-a-la-compote", "tortillas-roulees-a-la-cannelle", "biscuits-a-la-cacahuete-trois-ingredients", "carres-d-avoine-a-la-confiture", "pop-corn-au-caramel", "crumble-de-banane-a-la-poele-et-a-la-coco") },
 
   /* Un plat */
   { id: "pates", label: "Pâtes", famille: "plat", tuile: "spaghetti-aux-boulettes-de-dinde", demande: "de pâtes",
