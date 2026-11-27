@@ -61,10 +61,11 @@ export type Collectionneur = {
   commune: number; rare: number; epique: number; legendaire: number; chromatique: number; rang: number; moi: boolean;
 };
 
-/** Le serveur ne rend que les scores et les identités publiques. */
-export async function lireClassement(_client: SupabaseClient, portee: "amis" | "tous", signal?: AbortSignal) {
+/** Le serveur ne rend que les scores et les identités publiques, entre amis seulement
+ * (Louis, 2026-11-27 : jamais le classement de tout Vaiiya). */
+export async function lireClassement(_client: SupabaseClient, signal?: AbortSignal) {
   try {
-    const reponse = await fetchAuth("/api/boosters/classement?portee=" + portee, { signal, cache: "no-store" });
+    const reponse = await fetchAuth("/api/boosters/classement", { signal, cache: "no-store" });
     if (!reponse.ok) return null;
     const data = await reponse.json();
     return Array.isArray(data.liste) ? data.liste as Collectionneur[] : null;

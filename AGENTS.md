@@ -91,6 +91,15 @@ pas resynthétiser du bruit filtré : partir de vrais sons (banque de sons).
 ⚠️ Les chances qui montent après plusieurs rares sont abandonnées (Louis) : ne
 pas les réparer dans `ouvrir_booster_exercices_v5`.
 
+## Le classement des cartes, entre amis seulement — 2026-11-27
+
+Louis : « je veux le rang entre amis, pas le rang de Vaiiya entier ». L’onglet
+« Tout Vaiiya » des collectionneurs est retiré (`Classement` sans sélecteur) et
+`/api/boosters/classement` ne rend plus que soi et ses amis réciproques
+(paramètre `portee` supprimé). Ce qui suit sur « Tout Vaiiya » et le top 5 est
+remplacé. « Seuls N membres ont… » et « Qui l’a » restent : ce sont des comptes,
+pas un classement. Aucun SQL.
+
 ## On choisit sa vitrine de cartes d'exercices — 2026-11-19
 
 Louis : « ma vitrine n'est pas changeable pour les cartes ». « Changer » à côté

@@ -19,8 +19,6 @@ async function pages<T>(lire: (debut: number) => PromiseLike<{ data: T[] | null;
 export async function GET(req: Request) {
   const compte = await compteAppelant(req);
   if (!compte) return refusAuth();
-  const portee = new URL(req.url).searchParams.get("portee") ?? "tous";
-  if (portee !== "tous" && portee !== "amis") return Response.json({ error: "portee_invalide" }, { ...prive, status: 400 });
   try {
     const db = createAdminClient();
     const profils = await pages(debut => db.from("profiles").select("id,pseudo,avatar_url")
@@ -40,23 +38,18 @@ export async function GET(req: Request) {
         if (!data || data.length < taille) break;
       }
     }
-    let membres = profils;
-    if (portee === "amis") {
-      const [suivis, abonnes] = await Promise.all([
-        pages(debut => db.from("followers").select("following_id").eq("follower_id", compte.id)
-          .order("following_id").range(debut, debut + taille - 1).abortSignal(req.signal)),
-        pages(debut => db.from("followers").select("follower_id").eq("following_id", compte.id)
-          .order("follower_id").range(debut, debut + taille - 1).abortSignal(req.signal)),
-      ]);
-      const retour = new Set(abonnes.map(p => p.follower_id));
-      const amis = new Set(suivis.filter(p => retour.has(p.following_id)).map(p => p.following_id));
-      membres = profils.filter(p => p.id === compte.id || amis.has(p.id));
-    }
+    // Entre amis seulement (Louis, 2026-11-27) : jamais le classement de tout Vaiiya.
+    const [suivis, abonnes] = await Promise.all([
+      pages(debut => db.from("followers").select("following_id").eq("follower_id", compte.id)
+        .order("following_id").range(debut, debut + taille - 1).abortSignal(req.signal)),
+      pages(debut => db.from("followers").select("follower_id").eq("following_id", compte.id)
+        .order("follower_id").range(debut, debut + taille - 1).abortSignal(req.signal)),
+    ]);
+    const retour = new Set(abonnes.map(p => p.follower_id));
+    const amis = new Set(suivis.filter(p => retour.has(p.following_id)).map(p => p.following_id));
+    const membres = profils.filter(p => p.id === compte.id || amis.has(p.id));
     const classement = classerCollections(membres, collections, compte.id);
-    const liste = portee === "tous"
-      ? classement.filter((ligne, index) => index < 5 || ligne.moi)
-      : classement;
-    return Response.json({ liste }, prive);
+    return Response.json({ liste: classement }, prive);
   } catch {
     return Response.json({ error: "classement_indisponible" }, { ...prive, status: 503 });
   }

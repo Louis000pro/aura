@@ -148,25 +148,21 @@ function MiniRaretes({ l }: { l: Collectionneur }) {
   return <span className={styles.mini}>{liste.map(r => <i key={r}><Point rarete={r} /><span className="vy-nombre">{l[r]}</span></i>)}</span>;
 }
 
-export function Classement({ portee: porteeDepart = "tous" }: { portee?: "amis" | "tous" }) {
-  const [portee, setPortee] = useState(porteeDepart);
-  const [donnees, setDonnees] = useState<{ portee: string; liste: Collectionneur[] | null } | null>(null);
+/** Le classement des collectionneurs, entre amis seulement (Louis, 2026-11-27 : jamais tout Vaiiya). */
+export function Classement() {
+  const [donnees, setDonnees] = useState<{ revision: number; liste: Collectionneur[] | null } | null>(null);
   const [limite, setLimite] = useState(50);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     const controle = new AbortController();
-    void lireClassement(createClient(), portee, controle.signal)
-      .then(liste => { if (!controle.signal.aborted) setDonnees({ portee, liste }); });
+    void lireClassement(createClient(), controle.signal)
+      .then(liste => { if (!controle.signal.aborted) setDonnees({ revision, liste }); });
     return () => controle.abort();
-  }, [portee, revision]);
-  const liste = donnees?.portee === portee ? donnees.liste : undefined;
+  }, [revision]);
+  const liste = donnees?.revision === revision ? donnees.liste : undefined;
   return <div className={styles.bloc}>
-    <div className={styles.selecteur} role="tablist">
-      {(["amis", "tous"] as const).map(p => <button key={p} type="button" role="tab" aria-selected={portee === p}
-        onClick={() => { setPortee(p); setLimite(50); }}>{p === "amis" ? "Amis" : "Tout Vaiiya"}</button>)}
-    </div>
-    {liste === undefined ? <p className={styles.note}>Chargement…</p> : liste === null ? <p className={styles.note}>Le classement n’est pas disponible pour le moment. <button type="button" onClick={() => { setDonnees(null); setRevision(r => r + 1); }}>Réessayer</button></p> :
-      !liste.length ? <p className={styles.note}>Personne n’a encore de carte ici.</p> : <ol className={styles.classement}>
+    {liste === undefined ? <p className={styles.note}>Chargement…</p> : liste === null ? <p className={styles.note}>Le classement n’est pas disponible pour le moment. <button type="button" onClick={() => { setRevision(r => r + 1); }}>Réessayer</button></p> :
+      !liste.length ? <p className={styles.note}>Ajoute des amis pour comparer vos collections.</p> : <ol className={styles.classement}>
         {liste.slice(0, limite).concat(liste.slice(limite).filter(l => l.moi)).map((l, k, affichees) => {
           const coupe = k > 0 && l.rang > affichees[k - 1].rang + 1;
           const contenu = <>
@@ -181,7 +177,7 @@ export function Classement({ portee: porteeDepart = "tous" }: { portee?: "amis" 
           </li>;
         })}
       </ol>}
-    {portee === "amis" && liste && liste.length > limite && <button type="button" className={styles.voirPlus} onClick={() => setLimite(n => n + 50)}>Voir plus de membres</button>}
+    {liste && liste.length > limite && <button type="button" className={styles.voirPlus} onClick={() => setLimite(n => n + 50)}>Voir plus de membres</button>}
     <p className={styles.note}>Commune 1 · rare 2 · épique 5 · légendaire 10 · chromatique 25. Les doublons ne comptent pas.</p>
   </div>;
 }
@@ -217,7 +213,7 @@ export function MaCollection({ cartes, image, parRarete }: {
   }, []);
   useEffect(() => {
     const controle = new AbortController();
-    void lireClassement(createClient(), "amis", controle.signal).then(liste => {
+    void lireClassement(createClient(), controle.signal).then(liste => {
       const moi = liste?.find(l => l.moi);
       if (!controle.signal.aborted && moi) setPlace({ rang: moi.rang, amis: liste!.length, points: moi.points });
     });

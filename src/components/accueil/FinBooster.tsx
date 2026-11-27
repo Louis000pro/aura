@@ -34,7 +34,7 @@ export function InfosFin({ cartes, exemplaires, avant }: {
     const client = createClient();
     if (rare) void lireDetenteurs(client, { exercice, rarete }, controle.signal)
       .then(d => { if (!controle.signal.aborted && d) setDetenteurs(d.total); });
-    void lireClassement(client, "amis", controle.signal).then(liste => {
+    void lireClassement(client, controle.signal).then(liste => {
       const moi = liste?.find(l => l.moi);
       if (!controle.signal.aborted && liste && moi && liste.length > 1) setRang({ rang: moi.rang, amis: liste.length });
     });
