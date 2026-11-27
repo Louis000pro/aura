@@ -22,6 +22,13 @@ import { slugify } from "@/lib/recipeBank";
 type Regle = [RegExp, string];
 
 const INGREDIENTS: Regle[] = [
+  [/^baguette$/, "baguette"],
+  [/^sumac$/, "sumac"],
+  [/^pate-filo$/, "pate-filo"],
+  [/^galette-de-riz-a-rehydrater$/, "feuille-riz"],
+  [/^banane-plantain$/, "plantain"],
+  [/^lait-concentre(-|$)/, "lait-concentre"],
+  [/^paneer$/, "feta"],
   [/anchois/, "anchois"],
   [/safran/, "safran"],
   [/sardine/, "sardines"],
@@ -70,6 +77,7 @@ const INGREDIENTS: Regle[] = [
   [/fecule|maizena|amidon/, "fecule"],
   [/petales-de-mais|cereales/, "cereales"],
   [/chips/, "chips-mais"],
+  [/^vermicelles-gout-chocolat$/, "chocolat"],
   [/nouilles-de-riz|vermicelle/, "nouilles-riz"],
   [/galette-de-riz/, "galette-riz"],
   [/galette-de-ble|tortilla|wrap/, "tortilla"],
