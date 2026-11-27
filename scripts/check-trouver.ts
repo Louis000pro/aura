@@ -18,8 +18,10 @@ import type { RecordMouvement } from "@/lib/records";
 import {
   DUREES, GROUPES, SANS_FILTRE, aDesSauts, aLaUne, chercher, compter, courtes, ditsDesFiltres, exercicesDe,
   faisableAvec, filtrer, lireSaisie, nouvelles, phrasePourToi, pourEquilibrer, pourToi, prochainPalier,
-  type Contexte, type Filtres, type SeanceTrouvable,
+  BALADE, FACONS_BALADE, ZONES_BALADE, momentCatalogue, ordreBalade, ouverteDuJour, rangeeCollection,
+  type Contexte, type FaitsMoment, type Filtres, type SeanceTrouvable,
 } from "@/lib/trouverSeance";
+import { voix } from "@/lib/guides";
 import { WAVE_11_EXERCISES } from "@/lib/workoutWave11";
 import { WAVE_12_EXERCISES } from "@/lib/workoutWave12";
 import { WAVE_13_EXERCISES } from "@/lib/workoutWave13";
@@ -211,15 +213,83 @@ const en = (s: SeanceTrouvable, c: string) => !s.collections || s.collections.in
   verdict("le bouton des feuilles compte avec la même règle", feuille.includes("compter(seances, brouillon)"));
   verdict("le Guide reçoit la séance qui manque, en une phrase de la personne", ecran.includes("onDemander(`Compose-moi ${"));
   const page = lire("src/app/progression/page.tsx");
+  verdict("l’onglet Catalogue monte le catalogue ouvert, sans la tuile « Je choisis »", page.includes("<CatalogueOuvert") && page.includes("page={{") && !page.includes('kind="choisis"'));
+  verdict("le catalogue ouvert n’écrit rien", ![".insert(", ".update(", ".upsert(", ".delete("].some((w) => lire("src/components/catalogue/TrouverSeance.tsx").includes(w)));
   verdict("« Je choisis » monte le nouveau catalogue", page.includes("<TrouverSeance") && page.includes(`h2 className="vy-titre leading-tight" style={{ color: "var(--text-0)" }}>Je choisis</h2>`));
   verdict("une seule recherche : l'ancienne loupe d'Entraînement est partie", !page.includes("resultatsRecherche") && !page.includes("hayRecherche")
-    && page.includes(`setChoisirCible("loupe")`));
+    && !page.includes(`setChoisirCible("loupe")`));
   verdict("une seule résolution des exercices d'une séance", page.includes("return exercicesDe(s) as Exercise[];"));
   verdict("« Mes séances » passe dans le bouton en haut à droite", page.includes(`onClick={() => ouvrirCollection("tiennes", false)}`));
   const recettes = lire("src/lib/rechercheRecettes.ts");
   const texte = lire("src/lib/texteRecherche.ts");
   verdict("les deux loupes lisent le texte avec la même règle", recettes.includes(`from "@/lib/texteRecherche"`)
     && lire("src/lib/trouverSeance.ts").includes(`from "@/lib/texteRecherche"`) && !/recipeBank|collectionsRecettes/.test(texte));
+}
+
+/* ── Le catalogue ouvert : le bloc du moment et la balade ─────────────── */
+{
+  const ctx: Contexte = { lieu: { location: "maison", equip: "halteres" }, dureeCible: 30, niveau: "Intermédiaire", premium: false, jour: "2026-11-24" };
+  const rien: FaitsMoment = { faites: [], derniere: "2026-11-22T10:00:00", prevue: null, heure: 15 };
+  const m = (f: Partial<FaitsMoment>, c: Contexte = ctx) => momentCatalogue(S, c, { ...rien, ...f });
+
+  // 1. Push fait ce matin : en complément, court, sans les pecs, et du calme.
+  const push = m({ faites: [{ titre: "Push, pectoraux et épaules", quand: "2026-11-24T08:30:00", exos: [] }], heure: 18 });
+  verdict("une séance faite aujourd'hui donne « En complément »", push?.id === "complement" && push.titre === "En complément", String(push?.id));
+  verdict("en complément : 20 minutes au plus", !!push && push.seances.every((s) => s.duration <= 20), titres(push?.seances ?? []));
+  verdict("en complément : rien qui retravaille les pecs", !!push && push.seances.every((s) => !s.collections?.some((c) => c === "pecs" || c === "epaules")), titres(push?.seances ?? []));
+  verdict("en complément : du calme en dernier", !!push && !!push.seances[push.seances.length - 1].collections?.some((c) => c === "recup" || c === "mobilite" || c === "tete"), titres(push?.seances ?? []));
+  verdict("en complément : la phrase nomme la séance faite", push?.dit.titre === "Push, pectoraux et épaules" && !!push.dit.quoi, JSON.stringify(push?.dit));
+  verdict("et le Guide le dit sans reproche", voix("sasha", "catalogue.complement", push?.dit ?? {}) === `Tu as fait «${NB}Push, pectoraux et épaules${NB}» aujourd’hui. Une deuxième séance${NB}? Courte, et pour ${push?.dit.quoi}.`,
+    voix("sasha", "catalogue.complement", push?.dit ?? {}));
+
+  // 2. Six jours sans séance : pour repartir.
+  const retour = m({ derniere: "2026-11-17T19:00:00" });
+  verdict("six jours sans séance donnent « Pour repartir »", retour?.id === "retour" && retour.dit.jours === 7, `${retour?.id} · ${retour?.dit.jours}`);
+  verdict("pour repartir : court et jamais avancé", !!retour && retour.seances.every((s) => s.duration <= 25 && s.difficulty !== "Avancé"), titres(retour?.seances ?? []));
+  verdict("cinq jours ne suffisent pas", m({ derniere: "2026-11-19T19:00:00" })?.id === "toi");
+  verdict("un compte qui n'a jamais fait de séance ne « repart » pas", m({ derniere: null })?.id === "toi");
+  verdict("une dernière séance illisible ne fait pas parler de reprise", m({ derniere: undefined })?.id === "toi");
+
+  // 3. Une séance prévue : ce qui fait le même travail.
+  const pull = m({ prevue: { titre: "Pull", exos: [] } });
+  verdict("une séance prévue donne « Autour de ta séance »", pull?.id === "prevue" && pull.dit.titre === "Pull", String(pull?.id));
+  verdict("autour de Pull : des séances qui tirent", !!pull && pull.seances.every((s) => s.collections?.some((c) => c === "dos" || c === "haut" || c === "fullbody" || c === "bras")), titres(pull?.seances ?? []));
+
+  // 4 et 5. Le matin, le soir.
+  const matin = m({ heure: 7 });
+  verdict("avant 9 h : « Pour bien commencer », 15 minutes au plus", matin?.id === "matin" && matin.seances.every((s) => s.duration <= 15), `${matin?.id} · ${titres(matin?.seances ?? [])}`);
+  const soir = m({ heure: 22 });
+  verdict("à partir de 21 h : « Pour finir la journée »", soir?.id === "soir" && soir.seances.every((s) => s.duration <= 15), `${soir?.id} · ${titres(soir?.seances ?? [])}`);
+  verdict("en journée, rien de particulier : « Pour toi »", m({})?.id === "toi" && m({})?.dit.quoi === phrasePourToi(ctx));
+  verdict("l'heure inconnue ne décide rien", m({ heure: null })?.id === "toi");
+
+  // L'ordre des questions : la séance faite l'emporte sur tout.
+  verdict("une séance faite l'emporte sur la reprise, la prévue et l'heure",
+    m({ faites: [{ titre: "Pull", quand: "2026-11-24T06:00:00", exos: [] }], derniere: "2026-11-01T10:00:00", prevue: { titre: "Push", exos: [] }, heure: 7 })?.id === "complement");
+  verdict("la reprise l'emporte sur la séance prévue", m({ derniere: "2026-11-10T10:00:00", prevue: { titre: "Pull", exos: [] } })?.id === "retour");
+
+  // Les règles communes.
+  const tous = (["complement", "retour", "prevue", "matin", "soir", "toi"] as const);
+  const exemples = [push, retour, pull, matin, soir, m({})];
+  verdict("chaque situation a sa phrase dans guides.ts", tous.every((id) => voix(null, `catalogue.${id}`, {}).length > 0));
+  verdict("deux séances au moins à chaque fois, trois au plus", exemples.every((x) => !!x && x.seances.length >= 2 && x.seances.length <= 3),
+    exemples.map((x) => `${x?.id}:${x?.seances.length}`).join(" "));
+  verdict("pour un compte gratuit, la grande carte est toujours incluse", exemples.every((x) => x?.seances[0].access !== "premium"),
+    exemples.map((x) => x?.seances[0].title).join(" | "));
+  const faiteHier = m({ faites: [{ titre: "Full Body Débutant", quand: "2026-11-23T08:00:00", exos: [] }], derniere: "2026-11-23T08:00:00", heure: 7 });
+  verdict("une séance faite ces sept jours n'est jamais la grande", faiteHier?.seances[0].title !== "Full Body Débutant", String(faiteHier?.seances[0].title));
+  verdict("le même jour, les mêmes cartes", JSON.stringify(m({ heure: 22 })?.seances.map((s) => s.id)) === JSON.stringify(soir?.seances.map((s) => s.id)));
+  const semaine = Array.from({ length: 7 }, (_, i) => momentCatalogue(S, { ...ctx, jour: `2026-11-2${i}` }, rien)?.seances[0].id);
+  verdict("la grande carte change d'un jour à l'autre", new Set(semaine).size > 1, semaine.join(", "));
+
+  // La balade.
+  const ordres = Array.from({ length: 6 }, (_, i) => ordreBalade(`2026-11-2${i}`).join(","));
+  verdict("la balade change d'ordre chaque jour", new Set(ordres).size === 6, ordres[0]);
+  verdict("et garde toutes ses rangées", ordres.every((o) => o.split(",").sort().join() === [...BALADE].sort().join()));
+  verdict("le même jour, le même ordre", ordreBalade("2026-11-24").join() === ordreBalade("2026-11-24").join());
+  const vides = [...ZONES_BALADE, ...FACONS_BALADE].filter((z) => rangeeCollection(S, z.id, ctx).length < 3).map((z) => z.label);
+  verdict("chaque zone et chaque façon a au moins trois séances", vides.length === 0, vides.join(", "));
+  verdict("la zone ouverte change d'un jour à l'autre", ouverteDuJour(ZONES_BALADE, "2026-11-24").id !== ouverteDuJour(ZONES_BALADE, "2026-11-25").id);
 }
 
 console.log(echecs === 0 ? "\nTout passe." : `\n${echecs} échec(s).`);

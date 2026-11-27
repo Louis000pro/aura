@@ -56,6 +56,32 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - **Auth = Supabase, et rien d'autre.** Google passe par `supabase.auth.signInWithOAuth({ provider: "google" })` dans `AuthContext`, et les codes de confirmation par `/api/auth/send-otp` + `/api/auth/verify-otp` (envoi Resend, jeton scellé en HMAC avec `AUTH_SECRET`). `next-auth` figurait dans `package.json` sans être importé nulle part : retiré le 2026-08-11, **ne pas le réinstaller** en croyant réparer quelque chose. Plus Stripe et web-push. **L'app est auth-gated : non testable en local.** Vérification standard = `npx tsc --noEmit` + build qui passe ; la validation visuelle, c'est Louis sur Vercel.
 - Secrets : `.env.local` (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `COACH_AURA_KEY`) — à demander à Louis, jamais commité.
 
+## Le catalogue ouvert — 2026-11-28
+
+Louis : le Catalogue d'Entraînement « trop peu présent », et une deuxième
+séance demandait Entraînement › Catalogue › « Je choisis » › feuille.
+Maquette guidée (https://claude.ai/artifact/6nVPkoskyKNbc9S2CboFuj), GO
+avec les quatre recommandations. L'onglet Catalogue monte « Trouver ma
+séance » EN PAGE (`TrouverSeance` avec `page`, posé par `CatalogueOuvert`
+dans `progression/page.tsx`) : la loupe et les filtres, « Mes séances »
+dans un rond, puis un bloc « et maintenant ? » (visage du Guide, phrase
+`catalogue.*` de `guides.ts`, trois séances), les portes J'improvise et
+**Je compose** (la tuile « Je choisis » est supprimée), les programmes,
+une balade dont l'ordre tourne chaque jour (équilibrer, une zone et une
+façon de s'entraîner en onglets, moins de 15 min, palier, nouvelles),
+puis les classiques, tout le catalogue et les mouvements.
+⚠️ La règle du bloc vit dans `momentCatalogue` (`lib/trouverSeance`,
+`check:trouver`), sans IA : séance faite aujourd'hui (en complément,
+20 min au plus, autre chose, du calme) › 6 jours sans séance › séance
+prévue (même travail) › avant 9 h › à partir de 21 h › Pour toi. Une
+séance faite ces 7 jours n'est jamais la grande. « Pour toi » tourne
+désormais aussi pour un compte gratuit (les trois incluses les mieux
+placées). Une collection, « Mes séances » ou tout le catalogue s'ouvrent
+encore dans la feuille, qui se referme au retour ; sa page « Je choisis »
+ne sert plus qu'à poser une séance sur un jour depuis le Planning.
+L'accueil, séance du jour faite, propose « Une deuxième séance ? ».
+Aucun SQL. Vu sur une page d'essai (supprimée) à 375 px, sans compte.
+
 ## Les ouvertures à blanc — 2026-11-24
 
 Louis : simuler tout le déroulé du booster à l'infini, sans rien gagner,

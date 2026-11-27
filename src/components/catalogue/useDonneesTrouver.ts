@@ -23,9 +23,12 @@ export type DonneesTrouver = {
   faites: SeanceFaite[] | null;
   records: RecordMouvement[] | null;
   dureeCible: number | null;
+  /** Le début de la dernière séance, toutes dates ; `null` = jamais,
+   *  `undefined` = lecture ratée (le catalogue ouvert ne parle alors pas de reprise). */
+  derniere: string | null | undefined;
 };
 
-const RIEN: DonneesTrouver = { pret: false, faites: null, records: null, dureeCible: null };
+const RIEN: DonneesTrouver = { pret: false, faites: null, records: null, dureeCible: null, derniere: undefined };
 
 /** Les noms des exercices d'une séance du journal (des objets, ou des noms). */
 function nomsDe(exos: unknown): string[] {
@@ -50,6 +53,21 @@ async function lireFaites(userId: string): Promise<SeanceFaite[] | null> {
   } catch { return null; }
 }
 
+async function lireDerniere(userId: string): Promise<string | null | undefined> {
+  try {
+    const { data, error } = await createClient()
+      .from("workout_sessions")
+      .select("started_at")
+      .eq("user_id", userId)
+      .not("started_at", "is", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return undefined;
+    return (data as { started_at: string | null } | null)?.started_at ?? null;
+  } catch { return undefined; }
+}
+
 async function lireDureeCible(userId: string): Promise<number | null> {
   try {
     const { data } = await createClient()
@@ -67,9 +85,9 @@ export function useDonneesTrouver(userId: string | null): DonneesTrouver {
   useEffect(() => {
     if (!userId) return;
     let vivant = true;
-    void Promise.all([lireFaites(userId), lireRecords(userId), lireDureeCible(userId)])
-      .then(([faites, records, dureeCible]) => {
-        if (vivant) setLu({ pour: userId, data: { pret: true, faites, records, dureeCible } });
+    void Promise.all([lireFaites(userId), lireRecords(userId), lireDureeCible(userId), lireDerniere(userId)])
+      .then(([faites, records, dureeCible, derniere]) => {
+        if (vivant) setLu({ pour: userId, data: { pret: true, faites, records, dureeCible, derniere } });
       })
       .catch(() => { if (vivant) setLu({ pour: userId, data: { ...RIEN, pret: true } }); });
     return () => { vivant = false; };

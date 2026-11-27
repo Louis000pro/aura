@@ -103,6 +103,7 @@ export default function HeroJournee({ onPret }: {
         /* « Refaire la séance » relance ce qui vient d'être fait, jamais
            ce qui vient après : deux questions différentes, deux chemins. */
         onRedo={j.refaire}
+        onDeuxieme={() => router.push("/progression?vue=catalogue")}
         onImprovise={() => ouvrir("improviser")}
         onOrganise={donnerUnJour}
         onShift={() => openAssistant("Décale ma séance d’aujourd’hui à un autre jour")}

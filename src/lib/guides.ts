@@ -72,6 +72,8 @@ function paliersDits(c: { paliers?: number; titre?: string }): string {
 }
 
 export type ContexteVoix = {
+  /** `catalogue.*` : ce qu’il reste à travailler (« les jambes et les abdos »), ou la phrase de « Pour toi ». */
+  quoi?: string;
   /** `bilan.*` : les records montés pendant la semaine. */
   paliers?: number;
   /** Le pseudo, déjà nettoyé par l'appelant. */
@@ -1066,6 +1068,27 @@ const REPLIQUES = {
       ? "Une séance posée. Une direction claire, et ça suffit."
       : `${seancesPosees(c.seances)}, peu de zones différentes. Ciblée, c’est un choix.`),
   },
+  /* ── Le catalogue ouvert : le bloc « et maintenant ? » (GO de Louis, 2026-11-28) ──
+     La règle vit dans lib/trouverSeance (momentCatalogue). Jamais un reproche. */
+  "catalogue.complement": {
+    commun: (c) => `Tu as fait « ${c.titre ?? "ta séance"} » aujourd’hui. Une deuxième séance ? Courte, et ${c.quoi ? `pour ${c.quoi}` : "sur autre chose"}.`,
+  },
+  "catalogue.retour": {
+    commun: (c) => `Ta dernière séance date de ${c.jours ?? 6} jours. On repart avec quelque chose de court.`,
+  },
+  "catalogue.prevue": {
+    commun: (c) => `« ${c.titre ?? "Ta séance"} » est prévue aujourd’hui. Pas envie ? Celles-ci font le même travail, ton programme ne bouge pas.`,
+  },
+  "catalogue.matin": {
+    commun: "Il est tôt. De quoi te réveiller en moins d’un quart d’heure.",
+  },
+  "catalogue.soir": {
+    commun: "Il est tard. Plutôt de quoi te poser avant de dormir.",
+  },
+  "catalogue.toi": {
+    commun: (c) => c.quoi ?? "Pour commencer.",
+  },
+
   "semaine.vide": {
     commun: "Rien de posé cette semaine, et c’est normal. Dis-le-moi, je te la remplis d’un coup.",
     nora:   "Rien de posé cette semaine, et c’est normal. Dis-le-moi et je te la remplis d’un coup.",

@@ -668,13 +668,14 @@ export function phrasePourToi(ctx: Contexte): string {
  *  gratuit, la grande est toujours incluse et la deuxième peut être Vaiiya+. */
 export function pourToi<S extends SeanceTrouvable>(seances: S[], ctx: Contexte): { phrase: string; seances: S[] } | null {
   // La grande carte tourne parmi les trois qui te vont le mieux ; les autres suivent dans l’ordre.
-  const rang = meilleures(vivier(seances), ctx, 9);
+  const rang = meilleures(vivier(seances), ctx, 20);
   const tour = [...aLaUne(rang.slice(0, 3), ctx.jour), ...rang.slice(3)];
   if (tour.length === 0) return null;
   let choix: S[];
   if (ctx.premium) choix = tour.slice(0, 3);
   else {
-    const grande = tour.find((s) => s.access !== "premium");
+    // La grande tourne aussi parmi les trois séances incluses qui te vont le mieux (catalogue ouvert, 2026-11-28).
+    const grande = aLaUne(rang.filter((s) => s.access !== "premium").slice(0, 3), ctx.jour)[0];
     if (!grande) return null;
     const reste = tour.filter((s) => s !== grande);
     const plus = reste.find((s) => s.access === "premium");
@@ -804,4 +805,188 @@ const LOTS_RECENTS: string[][] = [WAVE_14_EXERCISES, WAVE_13_EXERCISES, WAVE_12_
 export function nouvelles<S extends SeanceTrouvable>(seances: S[], ctx: Contexte, parLot = 2): S[] {
   const parId = new Map(seances.filter((s) => !s.perso && estSeance(s)).map((s) => [s.id, s]));
   return LOTS_RECENTS.flatMap((ids) => aLaUne(ids.filter((id) => parId.has(id)), ctx.jour).slice(0, parLot).map((id) => parId.get(id)!));
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LE CATALOGUE OUVERT (maquette « Le catalogue ouvert », GO de Louis le
+   2026-11-28). L'onglet Catalogue d'Entraînement montre tout, sans
+   l'étape « Je choisis ». En tête, un bloc répond à « et maintenant ? » :
+   la PREMIÈRE situation vraie l'emporte, dans cet ordre.
+
+     1. une séance déjà faite aujourd'hui → en complément (20 min au plus,
+        sur ce qu'elle n'a pas travaillé, et du calme) ;
+     2. six jours ou plus depuis la dernière séance → pour repartir ;
+     3. une séance prévue aujourd'hui → ce qui fait le même travail ;
+     4. avant 9 h → les routines du matin ;
+     5. à partir de 21 h → de quoi se poser ;
+     6. sinon → « Pour toi ».
+
+   ⚠️ Aucune IA : tout se lit dans ce que Vaiiya sait déjà (le journal des
+   sept derniers jours, la dernière séance, la journée du programme, l'heure
+   du téléphone). Une situation qui ne trouve pas deux séances passe la
+   main à la suivante. Une séance faite ces sept jours n'est jamais la
+   grande carte. Le même jour donne les mêmes cartes.
+   ════════════════════════════════════════════════════════════════════ */
+
+export type FaitsMoment = {
+  /** Le journal des sept derniers jours ; `null` = lecture ratée. */
+  faites: SeanceFaite[] | null;
+  /** Le début de la dernière séance, toutes dates ; `null` = jamais,
+   *  `undefined` = pas lu (on ne parle alors pas de reprise). */
+  derniere: string | null | undefined;
+  /** La séance prévue aujourd'hui et pas encore faite. */
+  prevue: { titre: string; exos: string[] } | null;
+  /** L'heure du téléphone ; `null` tant qu'elle n'est pas connue. */
+  heure: number | null;
+};
+
+export type IdMoment = "complement" | "retour" | "prevue" | "matin" | "soir" | "toi";
+
+export type Moment<S> = {
+  id: IdMoment;
+  titre: string;
+  seances: S[];
+  /** Ce que la phrase du Guide dit (`catalogue.<id>` dans guides.ts). */
+  dit: { titre?: string; quoi?: string; jours?: number };
+};
+
+export const TITRES_MOMENT: Record<IdMoment, string> = {
+  complement: "En complément", retour: "Pour repartir", prevue: "Autour de ta séance",
+  matin: "Pour bien commencer", soir: "Pour finir la journée", toi: "Pour toi",
+};
+
+/** Le groupe d'une étape du cycle, d'après son nom, quand on n'a pas ses exercices. */
+export function groupesDuNom(nom: string): Set<Groupe> {
+  const n = normaliser(nom);
+  const g = new Set<Groupe>();
+  if (/\bpush\b|pec|pouss/.test(n)) g.add("pousse");
+  if (/\bpull\b|\bdos\b|tir/.test(n)) g.add("tire");
+  if (/bas du corps|jambe|fessier|cuisse/.test(n)) g.add("jambes");
+  if (/haut du corps/.test(n)) { g.add("pousse"); g.add("tire"); }
+  if (/full|corps entier/.test(n)) { g.add("pousse"); g.add("tire"); g.add("jambes"); }
+  if (/abdo|gainage|tronc|core/.test(n)) g.add("tronc");
+  return g;
+}
+
+const groupesSeance = (s: SeanceTrouvable) => groupesDe(s.collections, exercicesDe(s).map((e) => e.name));
+const croise = (a: Set<Groupe>, b: Set<Groupe>) => [...a].some((x) => b.has(x));
+const estDouce = (s: SeanceTrouvable) => !!s.collections?.some((c) => DOUCES.includes(c));
+
+/** Trois séances, la meilleure d'abord : elle tourne chaque jour parmi les
+ *  quatre premières, n'a pas été faite ces sept jours, et reste incluse
+ *  pour un compte gratuit. */
+function trois<S extends SeanceTrouvable>(rang: S[], ctx: Contexte, recentes: Set<string>, n = 3): S[] {
+  const tour = [...aLaUne(rang.slice(0, 4), ctx.jour), ...rang.slice(4)];
+  const grande = tour.find((s) => !recentes.has(cleDe(s.title)) && (ctx.premium || s.access !== "premium"));
+  if (!grande) return [];
+  return [grande, ...tour.filter((s) => s !== grande)].slice(0, n);
+}
+
+function aPortee<S extends SeanceTrouvable>(seances: S[], ctx: Contexte): S[] {
+  const m = materielDe(ctx.lieu);
+  return seances.filter((s) => !s.perso && estSeance(s) && faisableAvec(s, m)
+    && !POUR_UN_CAS.has(s.id) && !s.collections?.includes("classiques"));
+}
+
+/** Trié par ce qu'un titre dit (les mots d'abord), puis par durée. */
+function parMots<S extends SeanceTrouvable>(xs: S[], mots: RegExp): S[] {
+  const ordre = new Map(xs.map((s, i) => [s, i]));
+  const vise = (s: S) => (mots.test(normaliser(s.title)) ? 0 : 1);
+  return [...xs].sort((a, b) => vise(a) - vise(b) || a.duration - b.duration || ordre.get(a)! - ordre.get(b)!);
+}
+
+export function momentCatalogue<S extends SeanceTrouvable>(seances: S[], ctx: Contexte, f: FaitsMoment): Moment<S> | null {
+  const recentes = new Set((f.faites ?? []).map((x) => cleDe(x.titre)));
+  const parTitre = new Map(seances.map((s) => [cleDe(s.title), s]));
+  const fait = (id: IdMoment, liste: S[], dit: Moment<S>["dit"] = {}): Moment<S> | null =>
+    (liste.length >= 2 ? { id, titre: TITRES_MOMENT[id], seances: liste, dit } : null);
+
+  // 1. Une séance déjà faite aujourd'hui : en complément.
+  const duJour = (f.faites ?? []).filter((x) => jourLocal(x.quand) === ctx.jour);
+  if (duJour.length > 0) {
+    const travaille = new Set<Groupe>();
+    for (const x of duJour) {
+      const s = parTitre.get(cleDe(x.titre));
+      for (const g of groupesDe(s?.collections, x.exos.length ? x.exos : (s ? exercicesDe(s).map((e) => e.name) : []))) travaille.add(g);
+    }
+    const court = { ...ctx, dureeCible: 15 };
+    const pool = aPortee(seances, ctx).filter((s) => s.duration <= 20 && !recentes.has(cleDe(s.title))
+      && !s.collections?.some((c) => c === "routines" || c === "joursans"));
+    const actives = meilleures(pool.filter((s) => !estDouce(s) && !croise(groupesSeance(s), travaille)), court, 8);
+    const douces = meilleures(pool.filter(estDouce), court, 4);
+    const deux = trois(actives, court, recentes, 2);
+    const calme = aLaUne(douces, ctx.jour).find((s) => !deux.includes(s));
+    const choix = [...deux, ...(calme ? [calme] : [])];
+    const reste = GROUPES_SEMAINE.filter((g) => !travaille.has(g.id)).map((g) => g.phrase);
+    const quoi = travaille.size > 0 && reste.length > 0 && reste.length < 4 ? liste(reste.slice(0, 2)) : undefined;
+    const m = fait("complement", choix, { titre: duJour[duJour.length - 1].titre, quoi });
+    if (m) return m;
+  }
+
+  // 2. Six jours ou plus depuis la dernière séance : on repart court.
+  if (f.derniere) {
+    const jours = numeroDuJour(ctx.jour) - numeroDuJour(jourLocal(f.derniere));
+    if (jours >= 6) {
+      const doux: Contexte = { ...ctx, dureeCible: 20, niveau: ctx.niveau === "Avancé" ? "Intermédiaire" : ctx.niveau };
+      const pool = vivier(seances).filter((s) => s.duration <= 25 && s.difficulty !== "Avancé");
+      const m = fait("retour", trois(meilleures(pool, doux, 8), doux, recentes), { jours });
+      if (m) return m;
+    }
+  }
+
+  // 3. Une séance prévue aujourd'hui : ce qui fait le même travail.
+  if (f.prevue) {
+    const prevue = f.prevue;
+    const vises = prevue.exos.length ? groupesDe(undefined, prevue.exos) : groupesDuNom(prevue.titre);
+    if (vises.size > 0) {
+      const pool = vivier(seances).filter((s) => cleDe(s.title) !== cleDe(prevue.titre) && !estDouce(s) && croise(groupesSeance(s), vises));
+      const m = fait("prevue", trois(meilleures(pool, ctx, 8), ctx, recentes), { titre: prevue.titre });
+      if (m) return m;
+    }
+  }
+
+  // 4 et 5. Le matin tôt, le soir tard.
+  if (f.heure != null && f.heure < 9) {
+    const pool = aPortee(seances, ctx).filter((s) => s.duration <= 15 && s.collections?.some((c) => c === "routines" || c === "mobilite"));
+    const m = fait("matin", trois(parMots(pool, /matin|reveil|tonique|matinale/), ctx, recentes));
+    if (m) return m;
+  }
+  if (f.heure != null && f.heure >= 21) {
+    const pool = aPortee(seances, ctx).filter((s) => s.duration <= 15 && s.collections?.some((c) => c === "routines" || c === "recup" || c === "tete" || c === "mobilite"));
+    const m = fait("soir", trois(parMots(pool, /dormir|calme|respir|soir|detente|relache/), ctx, recentes));
+    if (m) return m;
+  }
+
+  // 6. Sinon : pour toi.
+  const toi = pourToi(seances, ctx);
+  return toi ? { id: "toi", titre: TITRES_MOMENT.toi, seances: toi.seances, dit: { quoi: toi.phrase } } : null;
+}
+
+/* La balade : le milieu de la page change d'ordre chaque jour, le haut et
+   le bas ne bougent pas. Le même jour, le même ordre. */
+export type RangeeBalade = "equilibre" | "zones" | "courtes" | "palier" | "facons" | "nouvelles";
+export const BALADE: RangeeBalade[] = ["equilibre", "zones", "courtes", "palier", "facons", "nouvelles"];
+export const ordreBalade = (jour: string): RangeeBalade[] => aLaUne(BALADE, jour);
+
+export const ZONES_BALADE: { id: CatalogCollection; label: string }[] = [
+  { id: "abdos", label: "Abdos" }, { id: "fessiers", label: "Fessiers" }, { id: "jambes", label: "Jambes" },
+  { id: "pecs", label: "Pecs" }, { id: "dos", label: "Dos" }, { id: "epaules", label: "Épaules" }, { id: "bras", label: "Bras" },
+];
+export const FACONS_BALADE: { id: CatalogCollection; label: string }[] = [
+  { id: "force", label: "Force" }, { id: "circuits", label: "Circuits" },
+  { id: "intervalles", label: "Intervalles" }, { id: "isometrie", label: "Tenir et ralentir" },
+];
+/** La zone ou la façon ouverte en arrivant : une autre chaque jour. */
+export function ouverteDuJour<T>(xs: T[], jour: string, decalage = 0): T {
+  const k = numeroDuJour(jour) + decalage;
+  return xs[((k % xs.length) + xs.length) % xs.length];
+}
+
+/** Les séances d'une collection pour une rangée de la balade : celles à ta
+ *  portée d'abord, l'ordre tourne chaque jour. */
+export function rangeeCollection<S extends SeanceTrouvable>(seances: S[], id: CatalogCollection, ctx: Contexte, n = 8): S[] {
+  const m = materielDe(ctx.lieu);
+  const dans = seances.filter((s) => !s.perso && estSeance(s) && s.collections?.includes(id));
+  const ok = dans.filter((s) => faisableAvec(s, m));
+  return aLaUne(ok.length >= 3 ? ok : dans, ctx.jour).slice(0, n);
 }

@@ -76,7 +76,7 @@ const sansAbonnement = () => () => {};
 
 export default function TodayHero({
   state, day, etape, reserveLe, prevuLe = null, attendait = null, indisponible = false, onRetry, nbExos, rythme = null, nextLabel, doneStats, adaptationJusquau,
-  onStart, onRedo, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
+  onStart, onRedo, onDeuxieme, onImprovise, onOrganise, onShift, onReplace, onAdaptation,
   recouvrement = null, onLeger, dureeMin = null, onCourt,
   parcours = null, onTest, onSemaineParcours,
 }: {
@@ -122,6 +122,9 @@ export default function TodayHero({
      après. Un bouton ne promet pas une chose et n'en fait pas une
      autre. */
   onRedo: () => void;
+  /** Le catalogue ouvert : une fois la séance du jour faite, « Une deuxième
+   *  séance ? » ouvre l’onglet Catalogue sur son bloc « En complément ». */
+  onDeuxieme?: () => void;
   onImprovise: () => void;
   onOrganise: () => void;
   onShift: () => void;
@@ -488,6 +491,12 @@ export default function TodayHero({
             >
               <Play size={12} strokeWidth={2.5} fill="#fff" /> Refaire la séance
             </motion.button>
+            {onDeuxieme && (
+              <button type="button" onClick={onDeuxieme}
+                className="w-full mt-2.5 text-[13px] font-semibold text-white bg-transparent border-none cursor-pointer p-0">
+                Une deuxième séance ? Voir le catalogue
+              </button>
+            )}
           </>
         )}
 

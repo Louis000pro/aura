@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Search, Bookmark,
+  Moon, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen, Bookmark,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import AdaptationSheet from "@/components/entrainement/AdaptationSheet";
@@ -56,7 +56,7 @@ import type { Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import MouvementsRow from "@/components/seance/MouvementsRow";
-import TrouverSeance from "@/components/catalogue/TrouverSeance";
+import TrouverSeance, { type CollectionDuJour, type PageCatalogue } from "@/components/catalogue/TrouverSeance";
 import LesClassiques from "@/components/catalogue/LesClassiques";
 import { aLaUne, exercicesDe } from "@/lib/trouverSeance";
 import { Photo, WIDGET } from "@/components/entrainement/PhotoSeance";
@@ -73,7 +73,6 @@ import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import SeanceInterrompue from "@/components/entrainement/SeanceInterrompue";
 import { propositionAGarder } from "@/lib/garderSeanceReprise";
 import { useGuideActif } from "@/context/GuideContext";
-import { photoDuGuide } from "@/lib/photosGuide";
 import { VisageGuide } from "@/components/AssistantMark";
 import { voix } from "@/lib/guides";
 import { createClient } from "@/lib/supabase";
@@ -170,56 +169,62 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
 /* ════════════════════════════════════════════════════════════════════
    ② Cartes de bifurcation — J'improvise / Je choisis
    ════════════════════════════════════════════════════════════════════ */
-/** « Je choisis » : quatre séances en tranches verticales, comme des dos de
-    livres sur une étagère (maquette `docs/maquettes/je-choisis.html`, piste B,
-    choisie par Louis le 2026-10-20). Chaque photo suit le Guide choisi. */
-const CHOISIS_TRANCHES: { img: string; pos: string }[] = [
-  { img: "push-pompes",   pos: "22% 60%" },
-  { img: "legs-squat",    pos: "64% 30%" },
-  { img: "pull-traction", pos: "48% 15%" },
-  { img: "legs-fentes",   pos: "49% 30%" },
-];
 
 function ForkCard({ kind, count, onClick }: {
-  kind: "improvise" | "choisis";
+  kind: "improvise" | "compose";
+  /** « compose » : le nombre de séances gardées. */
   count?: number;
   onClick: () => void;
 }) {
   const isIA = kind === "improvise";
-  const { guide } = useGuideActif();
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="overflow-hidden relative cursor-pointer text-left border-none p-0 h-[148px] md:h-[188px]"
-      style={{ borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)" }}
+      className="overflow-hidden relative cursor-pointer text-left border-none p-0 h-[132px] md:h-[168px]"
+      style={{ borderRadius: "var(--r-bloc)", boxShadow: "var(--ombre-pose)",
+        background: isIA ? undefined : "linear-gradient(150deg,#8B5CF6,#C13BC1)" }}
     >
       {isIA ? (
-        <>
-          <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
-            style={{ position: "absolute", inset: 0 }} />
-        </>
+        <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
+          style={{ position: "absolute", inset: 0 }} />
       ) : (
-        <div aria-hidden className="absolute inset-0 grid grid-cols-4 gap-[2px]" style={{ background: "#0b0a10" }}>
-          {CHOISIS_TRANCHES.map((c) => (
-            <div key={c.img} style={{
-              backgroundImage: `url(/entrainement/m/${photoDuGuide(c.img, guide)}.webp)`,
-              backgroundSize: "cover", backgroundPosition: c.pos,
-            }} />
-          ))}
-        </div>
+        /* Le personnage joue un geste : on écrit sa séance à partir des mouvements. */
+        <span aria-hidden className="absolute -right-2 top-1" style={{ filter: "brightness(0) invert(1)", opacity: 0.92 }}>
+          <ExerciseThumb name="Squat" size={88} />
+        </span>
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
-        style={{ background: "var(--voile-affiche)" }}>
-        <p className="text-[11px] font-semibold mb-0.5" style={{ color: "#C9B8FF" }}>
-          {isIA ? "Nouvelle séance" : "Mes séances"}
-        </p>
-        <p className="text-[16px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je choisis"}</p>
-        <p className="text-[11px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
-          {isIA ? "Ton temps, ton matériel" : `${count ?? 0} séances et cours`}
+        style={{ background: isIA ? "var(--voile-affiche)" : undefined }}>
+        <p className="text-[16px] font-semibold text-white leading-tight">{isIA ? "J’improvise" : "Je compose"}</p>
+        <p className="text-[11px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.78)" }}>
+          {isIA ? "Ton temps, ton matériel" : count ? `Tes mouvements, ta séance · ${count} à toi` : "Tes mouvements, ta séance"}
         </p>
       </div>
     </motion.button>
+  );
+}
+
+/* Les classiques, en bas du catalogue ouvert : une bande, leur page s'ouvre au toucher. */
+function BandeClassiques({ onOuvrir }: { onOuvrir: () => void }) {
+  return (
+    <section className="mt-8">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="vy-sous" style={{ color: "var(--text-0)" }}>Les classiques</h3>
+        <button type="button" onClick={onOuvrir} className="text-[13px] font-semibold cursor-pointer bg-transparent border-none p-0" style={{ color: "var(--exp-encre)" }}>
+          Les 11
+        </button>
+      </div>
+      <motion.button whileTap={{ scale: 0.98 }} onClick={onOuvrir} aria-label="Ouvrir les classiques"
+        className="relative w-full mt-3 overflow-hidden block p-0 border-none cursor-pointer text-left"
+        style={{ height: 156, borderRadius: "var(--r-affiche)", boxShadow: "var(--ombre-pose)" }}>
+        <Photo img="cat-defis" style={{ position: "absolute", inset: 0 }} />
+        <span className="absolute inset-0 flex flex-col justify-end p-4" style={{ background: "linear-gradient(180deg, rgba(12,10,20,0.1), rgba(12,10,20,0.82))" }}>
+          <span className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>La même séance, d’un mois sur l’autre</span>
+          <span className="vy-sous text-white">Bats ton meilleur</span>
+        </span>
+      </motion.button>
+    </section>
   );
 }
 
@@ -1418,6 +1423,15 @@ function CatTile({ cat, count, freeCount, premiumCount, large, onOpen }: {
   );
 }
 
+const NB_COLLECTIONS = CATALOG.filter((c) => c.famille).length;
+/** Une collection par famille, celle du jour (« Tout le catalogue »). */
+function collectionsDuJourDe(jour: string): CollectionDuJour[] {
+  return FAMILLES.filter((f) => f.id !== "lire")
+    .map(({ id }) => aLaUne(CATALOG.filter((c) => c.famille === id), jour)[0])
+    .filter((c): c is CatDef => !!c)
+    .map((c) => ({ id: c.id, name: c.name, img: c.img, pos: c.pos }));
+}
+
 function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catInitial, pourDate, userId, niveau, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier, onDemander, onMouvement, apresPourToi }: {
   /** LES PROGRAMMES · la rangée « Suivre un programme », posée après « Pour toi ». */
   apresPourToi?: React.ReactNode;
@@ -1461,17 +1475,21 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
   /* « Tout le catalogue » : les collections rangées par familles, ouvertes
      depuis le bas de « Je choisis ». */
   const toutes = catId === "toutes";
-  const nbCollections = CATALOG.filter((c) => c.famille).length;
-  /* Une collection par famille, celle du jour (« Tout le catalogue »). */
-  const jourDuCatalogue = todayYmd();
-  const collectionsDuJour = FAMILLES.filter((f) => f.id !== "lire")
-    .map(({ id }) => aLaUne(CATALOG.filter((c) => c.famille === id), jourDuCatalogue)[0])
-    .filter((c): c is CatDef => !!c)
-    .map((c) => ({ id: c.id, name: c.name, img: c.img, pos: c.pos }));
+  const nbCollections = NB_COLLECTIONS;
+  const collectionsDuJour = collectionsDuJourDe(todayYmd());
   const ouvrirCollection = (id: string, depuis: boolean) => { setCatId(id); setDepuisToutes(depuis); setAdviceTheme("Tous"); };
   /* Revenir d'une collection : à « Tout le catalogue » si on en vient. */
-  const retour = () => { setCatId(cat && depuisToutes ? "toutes" : null); setDepuisToutes(false); setAdviceTheme("Tous"); };
-  const libelleRetour = cat && depuisToutes ? "Retour à tout le catalogue" : "Retour à Je choisis";
+  /* Ouverte depuis le catalogue ouvert (une collection, « Mes séances »,
+     tout le catalogue) : revenir referme la feuille, il n'y a plus de
+     « Je choisis » derrière. */
+  const depuisPage = !pourDate && !!catInitial && catInitial !== "loupe";
+  const retour = () => {
+    if (cat && depuisToutes) setCatId("toutes");
+    else if (depuisPage) { onClose(); return; }
+    else setCatId(null);
+    setDepuisToutes(false); setAdviceTheme("Tous");
+  };
+  const libelleRetour = cat && depuisToutes ? "Retour à tout le catalogue" : depuisPage ? "Retour au catalogue" : "Retour à Je choisis";
 
   /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
   const matchedAll = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
@@ -1775,6 +1793,81 @@ function ChooseSheet({ sessions, loading, canAccessPremium, maxSeances, catIniti
         />
       )}
     </AnimatePresence>
+    </>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LE CATALOGUE OUVERT (GO de Louis le 2026-11-28) : l'onglet Catalogue
+   montre tout, sans la tuile « Je choisis ». « Trouver ma séance » y vit
+   en page ; une collection, « Mes séances » ou tout le catalogue s'ouvrent
+   encore dans la feuille, qui se referme au retour.
+   ════════════════════════════════════════════════════════════════════ */
+function CatalogueOuvert({ sessions, userId, niveau, canAccessPremium, page, collections, nbCollections, onStart, onUpgrade,
+  onCollection, onToutesCollections, onDemander, onMouvement, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+  sessions: MergedSession[];
+  userId: string | null;
+  niveau: WorkoutSession["difficulty"] | null;
+  canAccessPremium: boolean;
+  page: PageCatalogue;
+  collections: CollectionDuJour[];
+  nbCollections: number;
+  onStart: (s: MergedSession) => void;
+  onUpgrade: () => void;
+  onCollection: (id: string) => void;
+  onToutesCollections: () => void;
+  onDemander: (demande: string) => void;
+  onMouvement: (exo: LibExercise) => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+  onInspirer: (s: MergedSession) => void;
+  onPlanifier: (s: MergedSession, date: string) => void;
+}) {
+  const [manage, setManage] = useState<MergedSession | null>(null);
+  const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
+  const totalPremium = sessions.filter((s) => !s.perso && s.access === "premium").length;
+  return (
+    <>
+      <TrouverSeance
+        seances={sessions}
+        userId={userId}
+        niveau={niveau}
+        canAccessPremium={canAccessPremium}
+        collections={collections}
+        nbCollections={nbCollections}
+        onStart={onStart}
+        onPremium={setPremiumPreview}
+        onManage={setManage}
+        onCollection={onCollection}
+        onToutesCollections={onToutesCollections}
+        onDemander={onDemander}
+        onMouvement={onMouvement}
+        page={page}
+      />
+      <AnimatePresence>
+        {manage && (
+          <ManageSheet
+            session={manage}
+            onClose={() => setManage(null)}
+            onEdit={(s) => { setManage(null); onEdit(s); }}
+            onDelete={(id) => { setManage(null); onDelete(id); }}
+            onVisibilityChange={onVisibilityChange}
+            onInspirer={(s) => { setManage(null); onInspirer(s); }}
+            onPlanifier={(s, date) => { setManage(null); onPlanifier(s, date); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {premiumPreview && (
+          <PremiumPreviewSheet
+            session={premiumPreview}
+            premiumCount={totalPremium}
+            onClose={() => setPremiumPreview(null)}
+            onUpgrade={() => { setPremiumPreview(null); onUpgrade(); }}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -2708,6 +2801,14 @@ export default function ProgressionPage() {
     void loadWeek();
   };
 
+  /* Le catalogue ouvert : la séance prévue aujourd'hui et pas encore faite
+     (son bloc du moment propose ce qui fait le même travail). */
+  const prevueDuJour = (() => {
+    if (journee.etat === "seance" && journee.jour?.title) return { titre: journee.jour.title, exos: journee.jour.exerciseList.map((e) => e.name) };
+    if (journee.etat === "etape" && journee.etape && journee.prevuLe === "aujourd’hui") return { titre: journee.etape.nom, exos: [] };
+    return null;
+  })();
+
   const startSession = (s: MergedSession) => {
     if (s.access === "premium" && !canAccessPremium) {
       setSheet(null);
@@ -3097,28 +3198,53 @@ export default function ProgressionPage() {
         )}
 
         {vue === "catalogue" && (
-          <>
-            {/* La loupe vit dans « Je choisis » (maquette « Trouver ma séance ») :
-                ce champ l'ouvre, le curseur dedans. */}
-            <button type="button" onClick={() => { setChoisirCible("loupe"); setSheet("choisir"); }}
-              className="w-full flex items-center gap-2.5 px-4 py-3 mt-4 rounded-2xl text-left cursor-pointer"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-              <Search size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-              <span className="flex-1 text-[16px]" style={{ color: "var(--text-3)" }}>Une séance, un exercice, 20 min…</span>
-            </button>
-            <div data-tour-anchor="prog-forks" className="grid grid-cols-2 gap-3 mt-3">
-              <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
-              <ForkCard kind="choisis" count={allSessions.length} onClick={() => { setChoisirCible(null); setSheet("choisir"); }} />
-            </div>
-            <div className="mt-6">
-              <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
-                premium={canAccessPremium} aujourdhui={today}
-                onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
-            </div>
-            <div className="mt-6">
-              <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
-            </div>
-          </>
+          /* LE CATALOGUE OUVERT : tout, sans « Je choisis ». La règle du
+             haut vit dans lib/trouverSeance (momentCatalogue), sans IA. */
+          <div className="mt-4">
+            <CatalogueOuvert
+              sessions={allSessions}
+              userId={user?.id ?? null}
+              niveau={profileLevel ? levelToDifficulty(profileLevel) : null}
+              canAccessPremium={canAccessPremium}
+              collections={collectionsDuJourDe(today)}
+              nbCollections={NB_COLLECTIONS}
+              page={{
+                prevue: prevueDuJour,
+                nbMesSeances: allSessions.filter((s) => s.perso).length,
+                onMesSeances: () => { setChoisirCible("tiennes"); setSheet("choisir"); },
+                apresMoment: (
+                  <>
+                    <div data-tour-anchor="prog-forks" className="grid grid-cols-2 gap-3 mt-6">
+                      <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
+                      <ForkCard kind="compose" count={allSessions.filter((s) => s.perso).length} onClick={() => ouvrirCreation(null)} />
+                    </div>
+                    <div className="mt-8">
+                      <RangeeProgrammes lecture={journee.lectureParcours} parcours={journee.parcours}
+                        premium={canAccessPremium} aujourdhui={today}
+                        onOuvrir={(id) => setVueParcours({ genre: "fiche", id })} />
+                    </div>
+                  </>
+                ),
+                avantCatalogue: <BandeClassiques onOuvrir={() => { setChoisirCible("classiques"); setSheet("choisir"); }} />,
+                enBas: (
+                  <div className="mt-8">
+                    <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
+                  </div>
+                ),
+              }}
+              onStart={startSession}
+              onUpgrade={() => router.push("/premium")}
+              onCollection={(id) => { setChoisirCible(id); setSheet("choisir"); }}
+              onToutesCollections={() => { setChoisirCible("toutes"); setSheet("choisir"); }}
+              onDemander={(demande) => openAssistant(demande)}
+              onMouvement={(exo) => setMouvements({ fiche: exo })}
+              onEdit={(s) => { setDraftSeed(null); setEditSession(s); setShowCreateModal(true); }}
+              onDelete={handleDelete}
+              onVisibilityChange={handleVisibilityChange}
+              onInspirer={inspirerDe}
+              onPlanifier={(s, date) => { void planifierSeance(s, date); }}
+            />
+          </div>
         )}
       </div>
 

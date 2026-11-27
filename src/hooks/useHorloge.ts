@@ -37,3 +37,9 @@ export function useMomentRepas(): MealType | null {
 export function useJourLocal(): string | null {
   return useSyncExternalStore(chaqueMinute, lireJour, auServeur);
 }
+
+/** L’heure du téléphone (0 à 23). `null` avant l’hydratation. Lue par le catalogue ouvert. */
+const lireHeure = () => new Date().getHours();
+export function useHeureLocale(): number | null {
+  return useSyncExternalStore(chaqueMinute, lireHeure, auServeur);
+}
